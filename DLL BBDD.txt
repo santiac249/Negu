@@ -1,0 +1,206 @@
+insert into negu.roles (rol)
+values ("Administrador"), ("Vendedor");
+
+insert into negu.marcas (marca)
+values ("Nike"), ("Adidas"), ("Puma");
+
+insert into negu.metodospago (metodo)
+values ("Efectivo"), ("Transferencia"), ("Credito");
+
+insert into negu.colores (nombre)
+values ("Negro"), ("Blanco"), ("Gris");
+
+insert into negu.tallas (nombre)
+values ("M"), ("L"), ("XL");
+
+select * from negu.roles;
+
+DELETE FROM negu.roles
+WHERE id > 2;
+
+insert into negu.roles (rol,id)
+values ("Administrador", 1);
+
+select * from negu.usuarios;
+
+SHOW TABLES;
+
+-- Tabla: Categorias
+CREATE TABLE Categorias (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  categoria VARCHAR(255) UNIQUE NOT NULL,
+  f_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+  foto VARCHAR(255),
+  descripcion TEXT
+);
+
+-- Tabla: Subcategorias
+CREATE TABLE Subcategorias (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  subcategoria VARCHAR(255) NOT NULL,
+  f_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+  foto VARCHAR(255),
+  descripcion TEXT
+);
+
+-- Relación muchos a muchos: Categorias <-> Subcategorias
+CREATE TABLE Categorias_Subcategorias (
+  categoria_id INT NOT NULL,
+  subcategoria_id INT NOT NULL,
+  PRIMARY KEY (categoria_id, subcategoria_id),
+  FOREIGN KEY (categoria_id) REFERENCES Categorias(id) ON DELETE CASCADE,
+  FOREIGN KEY (subcategoria_id) REFERENCES Subcategorias(id) ON DELETE CASCADE
+);
+
+-- Tabla: Marcas
+CREATE TABLE Marcas (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  marca VARCHAR(255) UNIQUE NOT NULL,
+  foto VARCHAR(255)
+);
+
+-- Tabla: Productos
+CREATE TABLE Productos (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  nombre VARCHAR(255) NOT NULL,
+  descripcion TEXT,
+  marca_id INT NOT NULL,
+  foto VARCHAR(255),
+  FOREIGN KEY (marca_id) REFERENCES Marcas(id) ON DELETE RESTRICT
+);
+
+-- Relación muchos a muchos: Productos <-> Subcategorias
+CREATE TABLE Productos_Subcategorias (
+  producto_id INT NOT NULL,
+  subcategoria_id INT NOT NULL,
+  PRIMARY KEY (producto_id, subcategoria_id),
+  FOREIGN KEY (producto_id) REFERENCES Productos(id) ON DELETE CASCADE,
+  FOREIGN KEY (subcategoria_id) REFERENCES Subcategorias(id) ON DELETE CASCADE
+);
+
+-- Tabla: Color
+CREATE TABLE Colores (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  nombre VARCHAR(255) UNIQUE NOT NULL
+);
+
+-- Tabla: Talla
+CREATE TABLE Tallas (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  nombre VARCHAR(255) UNIQUE NOT NULL
+);
+
+-- Tabla: Stock
+CREATE TABLE Stock (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  productoId INT NOT NULL,
+  colorId INT,
+  tallaId INT,
+  precio FLOAT NOT NULL,
+  cantidad INT DEFAULT 0,
+  UNIQUE (productoId, colorId, tallaId),
+  FOREIGN KEY (productoId) REFERENCES Productos(id) ON DELETE CASCADE,
+  FOREIGN KEY (colorId) REFERENCES Colores(id) ON DELETE SET NULL,
+  FOREIGN KEY (tallaId) REFERENCES Tallas(id) ON DELETE SET NULL
+);
+
+CREATE TABLE MetodosPago (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  metodo VARCHAR(255) NOT NULL UNIQUE
+);
+
+CREATE TABLE Proveedores (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  nombre VARCHAR(255) NOT NULL,
+  contacto VARCHAR(255),
+  telefono VARCHAR(255),
+  correo VARCHAR(255),
+  direccion TEXT,
+  f_creacion DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE Compras (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  proveedorId INT NOT NULL,
+  usuarioId INT NOT NULL,
+  fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
+  total FLOAT NOT NULL,
+  FOREIGN KEY (proveedorId) REFERENCES Proveedores(id),
+  FOREIGN KEY (usuarioId) REFERENCES Usuarios(id)
+);
+
+CREATE TABLE DetalleCompras (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  compraId INT NOT NULL,
+  stockId INT NOT NULL,
+  cantidad INT NOT NULL,
+  precio FLOAT NOT NULL,
+  FOREIGN KEY (compraId) REFERENCES Compras(id),
+  FOREIGN KEY (stockId) REFERENCES Stock(id)
+);
+
+CREATE TABLE Clientes (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  nombre VARCHAR(255) NOT NULL,
+  correo VARCHAR(255),
+  telefono VARCHAR(255),
+  documento VARCHAR(255) UNIQUE,
+  direccion TEXT,
+  f_creacion DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE Ventas (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  clienteId INT,
+  usuarioId INT NOT NULL,
+  fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
+  metPagoId INT NOT NULL,
+  total FLOAT NOT NULL,
+  descuento FLOAT DEFAULT 0,
+  estado VARCHAR(255) DEFAULT 'Completada',
+  FOREIGN KEY (clienteId) REFERENCES Clientes(id),
+  FOREIGN KEY (usuarioId) REFERENCES Usuarios(id),
+  FOREIGN KEY (metPagoId) REFERENCES MetodosPago(id)
+);
+
+CREATE TABLE DetalleVentas (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  ventaId INT NOT NULL,
+  stockId INT NOT NULL,
+  cantidad INT NOT NULL,
+  precio FLOAT NOT NULL,
+  FOREIGN KEY (ventaId) REFERENCES Ventas(id),
+  FOREIGN KEY (stockId) REFERENCES Stock(id)
+);
+
+CREATE TABLE Gastos (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  usuarioId INT NOT NULL,
+  proveedorId INT,
+  fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
+  concepto VARCHAR(255) NOT NULL,
+  monto FLOAT NOT NULL,
+  FOREIGN KEY (usuarioId) REFERENCES Usuarios(id),
+  FOREIGN KEY (proveedorId) REFERENCES Proveedores(id)
+);
+
+CREATE TABLE Auditoria (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  usuarioId INT NOT NULL,
+  entidad VARCHAR(255) NOT NULL,
+  entidadId INT,
+  accion VARCHAR(255) NOT NULL,
+  descripcion TEXT,
+  datosPrevios JSON,
+  datosNuevos JSON,
+  fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (usuarioId) REFERENCES Usuarios(id)
+);
+
+select * from categorias_subcategorias;
+
+select * from marcas;
+
+select * from roles;
+
+

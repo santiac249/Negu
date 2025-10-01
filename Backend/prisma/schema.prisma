@@ -1,0 +1,233 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model roles {
+  id  Int    @id @default(autoincrement())
+  rol String @db.VarChar(255)
+  usuarios Usuarios[]
+}
+
+model Usuarios {
+  id         Int      @id @default(autoincrement())
+  rol_id     Int
+  nombre     String
+  usuario    String   @unique
+  contrasena String
+  activo     Boolean  @default(true)
+  f_creacion DateTime @default(now())
+  foto       String?  
+  correo     String?  
+  telefono   String?  
+  cedula     String   @unique
+
+  rol        roles      @relation(fields: [rol_id], references: [id])
+  compras Compras[]
+  ventas Ventas[]
+  gastos Gastos[]
+  planSepares   PlanSepare[]
+  auditorias Auditoria[]
+}
+
+model Categorias {
+  id         Int      @id @default(autoincrement())
+  categoria  String   @unique
+  f_creacion DateTime @default(now())
+  foto       String?  
+  descripcion     String?  
+  subcategorias   Subcategorias[]    @relation("CategoriasSubcategorias")
+}
+
+model Subcategorias {
+  id         Int      @id @default(autoincrement())
+  subcategoria  String
+  f_creacion DateTime @default(now())
+  foto       String?  
+  descripcion     String?  
+  categorias      Categorias[]       @relation("CategoriasSubcategorias")
+  productos       Productos[]        @relation("SubcategoriasProductos")
+
+}
+
+model Productos {
+  id         Int     @id @default(autoincrement())
+  nombre     String 
+  descripcion String?
+  marca_id   Int
+  foto       String?
+
+  marca        Marcas      @relation(fields: [marca_id], references: [id])
+  subcategorias Subcategorias[]      @relation("SubcategoriasProductos")
+  stock        Stock[]
+}
+
+model Marcas {
+  id         Int     @id @default(autoincrement())
+  marca     String @unique
+  foto      String?
+  productos Productos[]
+}
+
+model Colores {
+  id     Int    @id @default(autoincrement())
+  nombre String @unique
+  stock  Stock[]
+}
+
+model Tallas {
+  id     Int    @id @default(autoincrement())
+  nombre String @unique
+  stock  Stock[]
+}
+
+
+//Stock tabla
+model Stock {
+  id             Int       @id @default(autoincrement())
+  productoId     Int
+  colorId        Int?
+  tallaId        Int?
+  precio_compra  Float     // Elimina el viejo campo 'precio', añade este
+  precio_venta   Float
+  cantidad       Int       @default(0)
+  producto       Productos  @relation(fields: [productoId], references: [id])
+  color          Colores?   @relation(fields: [colorId], references: [id])
+  talla          Tallas?    @relation(fields: [tallaId], references: [id])
+  @@unique([productoId, colorId, tallaId])
+  detalleCompras DetalleCompras[]
+  detalleVentas  DetalleVentas[]
+  planSepareProductos   PlanSepareProducto[]
+}
+
+/////////////////////////////////////////////
+
+model MetodosPago {
+  id        Int      @id @default(autoincrement())
+  metodo    String   @unique
+  ventas    Ventas[]
+}
+
+model Proveedores {
+  id         Int       @id @default(autoincrement())
+  nombre     String
+  telefono   String?
+  correo     String?
+  direccion  String?
+  f_creacion DateTime  @default(now())
+  compras    Compras[]
+  gastos Gastos[]
+}
+
+model Compras {
+  id           Int       @id @default(autoincrement())
+  proveedorId  Int
+  usuarioId    Int
+  fecha        DateTime  @default(now())
+  total        Float
+  proveedor    Proveedores @relation(fields: [proveedorId], references: [id])
+  usuario      Usuarios    @relation(fields: [usuarioId], references: [id])
+  detalles     DetalleCompras[]
+}
+
+model DetalleCompras {
+  id         Int     @id @default(autoincrement())
+  compraId   Int
+  stockId    Int
+  cantidad   Int
+  precio     Float  // Precio por unidad comprada
+  compra     Compras @relation(fields: [compraId], references: [id])
+  stock      Stock   @relation(fields: [stockId], references: [id])
+}
+
+model Clientes {
+  id         Int      @id @default(autoincrement())
+  nombre     String
+  correo     String?
+  telefono   String?
+  documento  String? @unique
+  direccion  String?
+  f_creacion DateTime @default(now())
+  ventas     Ventas[]
+  planSepares   PlanSepare[]
+}
+
+model Ventas {
+  id           Int       @id @default(autoincrement())
+  clienteId    Int?
+  usuarioId    Int
+  fecha        DateTime  @default(now())
+  metPagoId    Int
+  total        Float
+  descuento    Float     @default(0)
+  estado       String    @default("Completada")
+  cliente      Clientes? @relation(fields: [clienteId], references: [id])
+  usuario      Usuarios  @relation(fields: [usuarioId], references: [id])
+  metodoPago   MetodosPago @relation(fields: [metPagoId], references: [id])
+  detalles     DetalleVentas[]
+}
+
+model DetalleVentas {
+  id         Int     @id @default(autoincrement())
+  ventaId    Int
+  stockId    Int
+  cantidad   Int
+  precio     Float    // Precio unitario de la venta
+  venta      Ventas   @relation(fields: [ventaId], references: [id])
+  stock      Stock    @relation(fields: [stockId], references: [id])
+}
+
+model Gastos {
+  id           Int      @id @default(autoincrement())
+  usuarioId    Int
+  proveedorId  Int?
+  fecha        DateTime @default(now())
+  concepto     String
+  monto        Float
+  usuario      Usuarios  @relation(fields: [usuarioId], references: [id])
+  proveedor    Proveedores? @relation(fields: [proveedorId], references: [id])
+}
+
+
+model Auditoria {
+  id          Int      @id @default(autoincrement())
+  usuarioId   Int
+  entidad     String   // Nombre tabla o entidad afectada
+  entidadId   Int?     // Id registro afectado, si aplica
+  accion      String   // Ej: Crear, Editar, Eliminar
+  descripcion String?
+  datosPrevios Json?   // Datos antes del cambio (opcional)
+  datosNuevos Json?    // Datos después del cambio (opcional)
+  fecha       DateTime @default(now())
+  usuario     Usuarios @relation(fields: [usuarioId], references: [id])
+}
+
+// Plan separe
+model PlanSepare {
+  id             Int      @id @default(autoincrement())
+  clienteId      Int
+  usuarioId      Int
+  deudaInicial   Float
+  deudaParcial   Float
+  estado         String   // Ej: Activo, Incumplido, Anulado, Finalizado
+  porcentajePagado Float
+  fechaCreacion  DateTime @default(now())
+  fechaVencimiento DateTime
+  productos      PlanSepareProducto[]
+  cliente        Clientes  @relation(fields: [clienteId], references: [id])
+  usuario        Usuarios  @relation(fields: [usuarioId], references: [id])
+}
+
+model PlanSepareProducto {
+  id           Int      @id @default(autoincrement())
+  planSepareId Int
+  stockId      Int
+  cantidad     Int
+
+  planSepare   PlanSepare @relation(fields: [planSepareId], references: [id])
+  stock        Stock      @relation(fields: [stockId], references: [id])
+}

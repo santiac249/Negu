@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Variables globales */
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  /* Fondo base claro para toda la app */
+  background-color: #f8f9fb;
+  color: #213547;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Enlaces */
+a {
+  font-weight: 500;
+  color: #1d4ed8; /* azul Tailwind 700 */
+  text-decoration: none;
+}
+
+a:hover {
+  color: #2563eb; /* azul Tailwind 600 */
+}
+
+/* Body base */
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+
+  /* Flex solo si se necesita centrar (puedes quitar si usas layouts con Tailwind) */
+  display: flex;
+  flex-direction: column;
+
+  background-color: #f8f9fb; /* fondo claro global */
+  color: #213547;
+}
+
+/* Títulos */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  color: #111827; /* gris muy oscuro */
+  margin: 0;
+}
+
+/* Botones básicos (se pueden sobrescribir con Tailwind) */
+button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #2563eb; /* azul Tailwind 600 */
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 0.25s, border-color 0.25s;
+}
+
+button:hover {
+  background-color: #1d4ed8; /* azul Tailwind 700 */
+}
+
+button:focus,
+button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+
+/* Inputs base */
+input, textarea, select {
+  background-color: #ffffff;
+  color: #111827;
+  border: 1px solid #d1d5db; /* gris Tailwind 300 */
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: #2563eb; /* azul Tailwind 600 */
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.3);
+}
