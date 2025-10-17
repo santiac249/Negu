@@ -236,6 +236,18 @@ CREATE TABLE `PlanSepareProducto` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
+CREATE TABLE `AbonosPlanSepare` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `planSepareId` INTEGER NOT NULL,
+    `usuarioId` INTEGER NOT NULL,
+    `monto` DOUBLE NOT NULL,
+    `fecha` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `concepto` VARCHAR(191) NULL,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
 CREATE TABLE `_CategoriasSubcategorias` (
     `A` INTEGER NOT NULL,
     `B` INTEGER NOT NULL,
@@ -315,6 +327,12 @@ ALTER TABLE `PlanSepareProducto` ADD CONSTRAINT `PlanSepareProducto_planSepareId
 
 -- AddForeignKey
 ALTER TABLE `PlanSepareProducto` ADD CONSTRAINT `PlanSepareProducto_stockId_fkey` FOREIGN KEY (`stockId`) REFERENCES `Stock`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `AbonosPlanSepare` ADD CONSTRAINT `AbonosPlanSepare_planSepareId_fkey` FOREIGN KEY (`planSepareId`) REFERENCES `PlanSepare`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `AbonosPlanSepare` ADD CONSTRAINT `AbonosPlanSepare_usuarioId_fkey` FOREIGN KEY (`usuarioId`) REFERENCES `Usuarios`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `_CategoriasSubcategorias` ADD CONSTRAINT `_CategoriasSubcategorias_A_fkey` FOREIGN KEY (`A`) REFERENCES `Categorias`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;

@@ -2,6 +2,7 @@ import Usuarios from "./Usuarios";
 import Proveedores from "./Proveedores";
 import Marcas from "./Marcas";
 import Productos from "./Productos";
+import PlanSepare from "./PlanSepare";
 
 import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
@@ -35,6 +36,7 @@ const MENU_BY_ROLE = {
     { key: "productos", label: "Productos", icon: Package },
     { key: "stock", label: "Stock", icon: PackageCheck },
     { key: "vender", label: "Vender", icon: ShoppingCart },
+    { key: "plansepare", label: "Plan separe", icon: ShoppingCart },
     { key: "gastos", label: "Gastos", icon: Wallet },
     { key: "reportes", label: "Reportes de ventas", icon: BarChart3 },
   ],
@@ -43,6 +45,7 @@ const MENU_BY_ROLE = {
     { key: "productos", label: "Productos", icon: Package },
     { key: "stock", label: "Stock", icon: PackageCheck },
     { key: "vender", label: "Vender", icon: ShoppingCart },
+    { key: "plansepare", label: "Plan separe", icon: ShoppingCart },
     { key: "gastos", label: "Gastos", icon: Wallet },
   ],
 };
@@ -155,6 +158,7 @@ function ContentArea({ role, activeKey }) {
       productos: "Productos",
       stock: "Stock",
       vender: "Vender",
+      plansepare: "Plan separe",
       gastos: "Gastos",
       reportes: "Reportes de ventas",
     };
@@ -172,6 +176,7 @@ function ContentArea({ role, activeKey }) {
     proveedores: role === "Administrador" ? <Proveedores /> : <PlaceholderCard title="Acceso denegado" description="No tienes permisos para acceder a esta sección." />,
     marcas: role === "Administrador" ? <Marcas /> : <PlaceholderCard title="Acceso denegado" description="No tienes permisos para acceder a esta sección." />,
     productos: <Productos />,
+    plansepare: role === "Administrador" ? <PlanSepare /> : <PlaceholderCard title="Acceso denegado" description="No tienes permisos para acceder a esta sección." />,
     
   };
 

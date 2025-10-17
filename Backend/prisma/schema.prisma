@@ -32,6 +32,7 @@ model Usuarios {
   gastos Gastos[]
   planSepares   PlanSepare[]
   auditorias Auditoria[]
+  abonosPlanSepare AbonosPlanSepare[]
 }
 
 model Categorias {
@@ -220,6 +221,7 @@ model PlanSepare {
   productos      PlanSepareProducto[]
   cliente        Clientes  @relation(fields: [clienteId], references: [id])
   usuario        Usuarios  @relation(fields: [usuarioId], references: [id])
+  abonos        AbonosPlanSepare[]
 }
 
 model PlanSepareProducto {
@@ -230,4 +232,16 @@ model PlanSepareProducto {
 
   planSepare   PlanSepare @relation(fields: [planSepareId], references: [id])
   stock        Stock      @relation(fields: [stockId], references: [id])
+}
+
+model AbonosPlanSepare {
+  id            Int      @id @default(autoincrement())
+  planSepareId  Int
+  usuarioId     Int
+  monto         Float
+  fecha         DateTime @default(now())
+  concepto      String?  // "Abono parcial", "Abono final", etc.
+  
+  planSepare    PlanSepare @relation(fields: [planSepareId], references: [id])
+  usuario       Usuarios   @relation(fields: [usuarioId], references: [id])
 }
