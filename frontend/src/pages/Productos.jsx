@@ -1,24 +1,17 @@
-// src/pages/Productos.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../store/auth";
 import { useDebounce } from "../hooks/useDebounce";
-import Breadcrumbs from "../components/productos/Breadcrumbs";
+import ProductoBreadcrumbs from "../components/productos/ProductoBreadcrumbs";
 import CategoriaCard from "../components/productos/CategoriaCard";
 import SubcategoriaCard from "../components/productos/SubcategoriaCard";
 import ProductoCard from "../components/productos/ProductoCard";
-import CategoriaFormModal from "../components/productos/modals/CategoriaFormModal";
-import SubcategoriaFormModal from "../components/productos/modals/SubcategoriaFormModal";
-import ProductoFormModal from "../components/productos/modals/ProductoFormModal";
+import ProductoFormModal from "../components/productos/ProductoFormModal";
+import StockModal from "../components/productos/StockModal";
 import {
   getCategorias,
   getSubcategoriasByCategoria,
   getProductosBySubcategoria,
-  createCategoria,
-  updateCategoria,
-  createSubcategoria,
-  updateSubcategoria,
-  createProducto,
-  updateProducto,
+  getStockByProducto,
 } from "../api/productos.js";
 
 export default function Productos() {
@@ -28,268 +21,362 @@ export default function Productos() {
     if (user.rol && typeof user.rol.rol === "string") return user.rol.rol;
     if (typeof user.rol_id === "number") return user.rol_id === 1 ? "Administrador" : "Vendedor";
     return null;
-  }, [user]); // Determina el rol legible según tu store [1].
+  }, [user]);
 
-  const canAdmin = roleName === "Administrador"; // Controla visibilidad de acciones de administración [1].
+  const canAdmin = roleName === "Administrador";
 
   // Navegación por niveles
-  const [level, setLevel] = useState("categorias"); // categorias | subcategorias | productos [3].
-  const [selectedCategoria, setSelectedCategoria] = useState(null); // Para filtrar subcategorías por categoría [3].
-  const [selectedSubcategoria, setSelectedSubcategoria] = useState(null); // Para filtrar productos por subcategoría [3].
+  const [level, setLevel] = useState("categorias"); // categorias | subcategorias | productos
+  const [selectedCategoria, setSelectedCategoria] = useState(null);
+  const [selectedSubcategoria, setSelectedSubcategoria] = useState(null);
 
   // Datos
-  const [categorias, setCategorias] = useState([]); // Lista de categorías mostradas en tarjetas [3].
-  const [subcategorias, setSubcategorias] = useState([]); // Lista de subcategorías para la categoría seleccionada [3].
-  const [productos, setProductos] = useState([]); // Lista de productos para la subcategoría seleccionada [3].
+  const [categorias, setCategorias] = useState([]);
+  const [subcategorias, setSubcategorias] = useState([]);
+  const [productos, setProductos] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   // Búsqueda con debounce
-  const [query, setQuery] = useState(""); // Valor del input de búsqueda [1].
-  const debouncedQuery = useDebounce(query, 350); // Reduce llamadas al backend durante tipeo [1].
+  const [query, setQuery] = useState("");
+  const debouncedQuery = useDebounce(query, 350);
 
-  // Modales y edición
-  const [openCatModal, setOpenCatModal] = useState(false); // Crear/Editar categoría [5].
-  const [openSubModal, setOpenSubModal] = useState(false); // Crear/Editar subcategoría [5].
-  const [openProdModal, setOpenProdModal] = useState(false); // Crear/Editar producto [5].
-  const [editCat, setEditCat] = useState(null); // Categoría a editar [5].
-  const [editSub, setEditSub] = useState(null); // Subcategoría a editar [5].
-  const [editProd, setEditProd] = useState(null); // Producto a editar [5].
+  // Modales
+  const [showModal, setShowModal] = useState(false);
+  const [modalMode, setModalMode] = useState(null); // 'create-categoria' | 'edit-categoria' | 'create-subcategoria' | etc.
+  const [editingItem, setEditingItem] = useState(null);
+  const [showStockModal, setShowStockModal] = useState(false);
+  const [selectedProductoForStock, setSelectedProductoForStock] = useState(null);
 
   // Breadcrumbs
   const breadcrumbs = useMemo(() => {
     const items = [{ label: "Categorías", key: "categorias" }];
-    if (selectedCategoria) items.push({ label: selectedCategoria.categoria, key: "categoria", id: selectedCategoria.id });
-    if (selectedSubcategoria) items.push({ label: selectedSubcategoria.subcategoria, key: "subcategoria", id: selectedSubcategoria.id });
+    if (selectedCategoria) 
+      items.push({ label: selectedCategoria.categoria, key: "categoria", id: selectedCategoria.id });
+    if (selectedSubcategoria) 
+      items.push({ label: selectedSubcategoria.subcategoria, key: "subcategoria", id: selectedSubcategoria.id });
     return items;
-  }, [selectedCategoria, selectedSubcategoria]); // Genera la ruta de navegación visible [3][4].
+  }, [selectedCategoria, selectedSubcategoria]);
 
   const handleNavigateBreadcrumb = (idx) => {
     if (idx === 0) {
-      // Volver a categorías
       setLevel("categorias");
       setSelectedCategoria(null);
       setSelectedSubcategoria(null);
       setQuery("");
     } else if (idx === 1) {
-      // Volver a subcategorías de la categoría seleccionada
       setLevel("subcategorias");
       setSelectedSubcategoria(null);
       setQuery("");
     }
-  }; // Control del click en migas de pan para volver niveles arriba [3][4].
+  };
 
-  // Fetchers
+  // Loaders
   const loadCategorias = async () => {
-    const data = await getCategorias({ q: debouncedQuery }).catch((e) => {
+    setLoading(true);
+    try {
+      const response = await getCategorias({ q: debouncedQuery });
+      setCategorias(Array.isArray(response.data) ? response.data : response);
+    } catch (e) {
       console.error("Error categorías:", e);
-      return [];
-    });
-    setCategorias(Array.isArray(data) ? data : []);
-  }; // Trae categorías opcionalmente filtradas por q [1][2].
+      setCategorias([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadSubcategorias = async () => {
     if (!selectedCategoria) return;
-    const data = await getSubcategoriasByCategoria(selectedCategoria.id, { q: debouncedQuery }).catch((e) => {
+    setLoading(true);
+    try {
+      const data = await getSubcategoriasByCategoria(selectedCategoria.id, { q: debouncedQuery });
+      setSubcategorias(Array.isArray(data) ? data : []);
+    } catch (e) {
       console.error("Error subcategorías:", e);
-      return [];
-    });
-    setSubcategorias(Array.isArray(data) ? data : []);
-  }; // Trae subcategorías para la categoría actual [1][2].
+      setSubcategorias([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadProductos = async () => {
     if (!selectedSubcategoria) return;
-    const data = await getProductosBySubcategoria(selectedSubcategoria.id, { q: debouncedQuery }).catch((e) => {
+    setLoading(true);
+    try {
+      const data = await getProductosBySubcategoria(selectedSubcategoria.id, { q: debouncedQuery });
+      setProductos(Array.isArray(data) ? data : []);
+    } catch (e) {
       console.error("Error productos:", e);
-      return [];
-    });
-    setProductos(Array.isArray(data) ? data : []);
-  }; // Trae productos para la subcategoría actual [1][2].
+      setProductos([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // Efectos por nivel y búsqueda
+  // Effects
   useEffect(() => {
-    if (level === "categorias") loadCategorias(); // Carga categorías cuando estás en el primer nivel [1].
-  }, [level, debouncedQuery]); // Depende del nivel y del query debounced [1].
-
-  useEffect(() => {
-    if (level === "subcategorias" && selectedCategoria) loadSubcategorias(); // Carga subcategorías al cambiar categoría o query [1].
-  }, [level, selectedCategoria?.id, debouncedQuery]); // Mantiene datos coherentes al navegar [1].
+    if (level === "categorias") loadCategorias();
+  }, [level, debouncedQuery]);
 
   useEffect(() => {
-    if (level === "productos" && selectedSubcategoria) loadProductos(); // Carga productos al cambiar subcategoría o query [1].
-  }, [level, selectedSubcategoria?.id, debouncedQuery]); // Evita llamadas cuando no hay selección [1].
+    if (level === "subcategorias" && selectedCategoria) loadSubcategorias();
+  }, [level, selectedCategoria?.id, debouncedQuery]);
 
-  // Handlers de navegación mediante tarjetas
+  useEffect(() => {
+    if (level === "productos" && selectedSubcategoria) loadProductos();
+  }, [level, selectedSubcategoria?.id, debouncedQuery]);
+
+  // Handlers de navegación
   const openCategoria = (cat) => {
     setSelectedCategoria(cat);
     setLevel("subcategorias");
     setQuery("");
-  }; // Al hacer click en tarjeta de categoría navega al nivel siguiente [6][7].
+  };
 
   const openSubcategoria = (sub) => {
     setSelectedSubcategoria(sub);
     setLevel("productos");
     setQuery("");
-  }; // Al hacer click en tarjeta de subcategoría navega a productos [6][7].
+  };
 
-  // CRUD: reusa servicio api; refresca la lista actual
-  const submitCategoria = async (formData, isUpdate, id) => {
-    if (isUpdate) await updateCategoria(id, formData);
-    else await createCategoria(formData);
-    setOpenCatModal(false);
-    setEditCat(null);
-    await loadCategorias();
-  }; // Crea/actualiza categoría y recarga la grilla actual [1][2].
+  // Handlers de CRUD
+  const handleCreate = () => {
+    setEditingItem(null);
+    if (level === "categorias") {
+      setModalMode("create-categoria");
+    } else if (level === "subcategorias") {
+      setModalMode("create-subcategoria");
+    } else if (level === "productos") {
+      setModalMode("create-producto");
+    }
+    setShowModal(true);
+  };
 
-  const submitSubcategoria = async (formData, isUpdate, id) => {
-    if (isUpdate) await updateSubcategoria(id, formData);
-    else await createSubcategoria(formData);
-    setOpenSubModal(false);
-    setEditSub(null);
-    await loadSubcategorias();
-  }; // Crea/actualiza subcategoría y recarga la grilla actual [1][2].
+  const handleEdit = (item) => {
+    setEditingItem(item);
+    if (level === "categorias") {
+      setModalMode("edit-categoria");
+    } else if (level === "subcategorias") {
+      setModalMode("edit-subcategoria");
+    } else if (level === "productos") {
+      setModalMode("edit-producto");
+    }
+    setShowModal(true);
+  };
 
-  const submitProducto = async (formData, isUpdate, id) => {
-    if (isUpdate) await updateProducto(id, formData);
-    else await createProducto(formData);
-    setOpenProdModal(false);
-    setEditProd(null);
-    await loadProductos();
-  }; // Crea/actualiza producto y recarga la grilla actual [1][2].
+  const handleViewStock = async (producto) => {
+    try {
+      const stockData = await getStockByProducto(producto.id);
+      setSelectedProductoForStock(stockData);
+      setShowStockModal(true);
+    } catch (error) {
+      alert("Error al cargar stock: " + error.message);
+    }
+  };
+
+  const handleModalSuccess = () => {
+    setShowModal(false);
+    setEditingItem(null);
+    // Recargar datos según nivel
+    if (level === "categorias") loadCategorias();
+    else if (level === "subcategorias") loadSubcategorias();
+    else if (level === "productos") loadProductos();
+  };
 
   return (
-    <div className="p-4 md:p-6 w-full h-full overflow-y-auto">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
-        <div className="space-y-2">
-          <h1 className="text-xl md:text-2xl font-bold">Productos</h1>
-          <Breadcrumbs items={breadcrumbs} onNavigate={handleNavigateBreadcrumb} />
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+            Gestión de Productos
+          </h1>
+          <p className="text-gray-600">
+            Administra tu catálogo de categorías, subcategorías y productos
+          </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={
-              level === "categorias"
-                ? "Buscar categorías..."
-                : level === "subcategorias"
-                ? "Buscar subcategorías..."
-                : "Buscar productos..."
-            }
-            className="w-full sm:w-64 border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        {/* Breadcrumbs */}
+        <ProductoBreadcrumbs
+          items={breadcrumbs}
+          onNavigate={handleNavigateBreadcrumb}
+        />
+
+        {/* Barra de búsqueda y acciones */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
+          <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+            <div className="relative flex-1 w-full sm:max-w-md">
+              <svg
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={
+                  level === "categorias"
+                    ? "Buscar categorías..."
+                    : level === "subcategorias"
+                    ? "Buscar subcategorías..."
+                    : "Buscar productos..."
+                }
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              />
+            </div>
+
+            {canAdmin && (
+              <button
+                onClick={handleCreate}
+                className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all transform hover:scale-105 shadow-sm hover:shadow-md"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+                Crear {level === "categorias" ? "Categoría" : level === "subcategorias" ? "Subcategoría" : "Producto"}
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Loading State */}
+        {loading && (
+          <div className="flex justify-center items-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          </div>
+        )}
+
+        {/* Grids por nivel */}
+        {!loading && (
+          <>
+            {level === "categorias" && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {categorias.map((c) => (
+                  <CategoriaCard
+                    key={c.id}
+                    categoria={c}
+                    onClick={openCategoria}
+                    canAdmin={canAdmin}
+                    onEdit={handleEdit}
+                  />
+                ))}
+              </div>
+            )}
+
+            {level === "subcategorias" && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {subcategorias.map((s) => (
+                  <SubcategoriaCard
+                    key={s.id}
+                    subcategoria={s}
+                    onClick={openSubcategoria}
+                    canAdmin={canAdmin}
+                    onEdit={handleEdit}
+                  />
+                ))}
+              </div>
+            )}
+
+            {level === "productos" && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {productos.map((p) => (
+                  <ProductoCard
+                    key={p.id}
+                    producto={p}
+                    canAdmin={canAdmin}
+                    onEdit={handleEdit}
+                    onViewStock={handleViewStock}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* Empty States */}
+            {!loading && (
+              <>
+                {level === "categorias" && categorias.length === 0 && (
+                  <div className="text-center py-20">
+                    <div className="text-gray-400 text-6xl mb-4">📦</div>
+                    <h3 className="text-xl font-semibold text-gray-700 mb-2">
+                      No hay categorías
+                    </h3>
+                    <p className="text-gray-500 mb-4">
+                      Comienza creando tu primera categoría
+                    </p>
+                  </div>
+                )}
+
+                {level === "subcategorias" && subcategorias.length === 0 && (
+                  <div className="text-center py-20">
+                    <div className="text-gray-400 text-6xl mb-4">📂</div>
+                    <h3 className="text-xl font-semibold text-gray-700 mb-2">
+                      No hay subcategorías
+                    </h3>
+                    <p className="text-gray-500 mb-4">
+                      Agrega subcategorías a esta categoría
+                    </p>
+                  </div>
+                )}
+
+                {level === "productos" && productos.length === 0 && (
+                  <div className="text-center py-20">
+                    <div className="text-gray-400 text-6xl mb-4">🛍️</div>
+                    <h3 className="text-xl font-semibold text-gray-700 mb-2">
+                      No hay productos
+                    </h3>
+                    <p className="text-gray-500 mb-4">
+                      Agrega productos a esta subcategoría
+                    </p>
+                  </div>
+                )}
+              </>
+            )}
+          </>
+        )}
+
+        {/* Modales */}
+        {showModal && (
+          <ProductoFormModal
+            mode={modalMode}
+            item={editingItem}
+            parentCategoria={selectedCategoria}
+            parentSubcategoria={selectedSubcategoria}
+            onClose={() => {
+              setShowModal(false);
+              setEditingItem(null);
+            }}
+            onSuccess={handleModalSuccess}
           />
-          {canAdmin && (
-            <>
-              {level === "categorias" && (
-                <button
-                  onClick={() => setOpenCatModal(true)}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-                >
-                  Nueva Categoría
-                </button>
-              )}
-              {level === "subcategorias" && (
-                <button
-                  onClick={() => setOpenSubModal(true)}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-                >
-                  Nueva Subcategoría
-                </button>
-              )}
-              {level === "productos" && (
-                <button
-                  onClick={() => setOpenProdModal(true)}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-                >
-                  Nuevo Producto
-                </button>
-              )}
-            </>
-          )}
-        </div>
+        )}
+
+        {showStockModal && selectedProductoForStock && (
+          <StockModal
+            stockData={selectedProductoForStock}
+            onClose={() => {
+              setShowStockModal(false);
+              setSelectedProductoForStock(null);
+            }}
+          />
+        )}
       </div>
-
-      {/* Grids por nivel */}
-      {level === "categorias" && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {categorias.map((c) => (
-            <CategoriaCard
-              key={c.id}
-              categoria={c}
-              onClick={openCategoria}
-              canAdmin={canAdmin}
-              onEdit={(cat) => {
-                setEditCat(cat);
-                setOpenCatModal(true);
-              }}
-            />
-          ))}
-        </div>
-      )}
-
-      {level === "subcategorias" && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {subcategorias.map((s) => (
-            <SubcategoriaCard
-              key={s.id}
-              subcategoria={s}
-              onClick={openSubcategoria}
-              canAdmin={canAdmin}
-              onEdit={(sub) => {
-                setEditSub(sub);
-                setOpenSubModal(true);
-              }}
-            />
-          ))}
-        </div>
-      )}
-
-      {level === "productos" && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {productos.map((p) => (
-            <ProductoCard
-              key={p.id}
-              producto={p}
-              onClick={() => {}}
-              canAdmin={canAdmin}
-              onEdit={(prod) => {
-                setEditProd(prod);
-                setOpenProdModal(true);
-              }}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Modales CRUD */}
-      <CategoriaFormModal
-        open={openCatModal}
-        onClose={() => {
-          setOpenCatModal(false);
-          setEditCat(null);
-        }}
-        onSubmit={submitCategoria}
-        initialData={editCat}
-      />
-      <SubcategoriaFormModal
-        open={openSubModal}
-        onClose={() => {
-          setOpenSubModal(false);
-          setEditSub(null);
-        }}
-        onSubmit={submitSubcategoria}
-        initialData={editSub}
-        parentCategoria={selectedCategoria}
-      />
-      <ProductoFormModal
-        open={openProdModal}
-        onClose={() => {
-          setOpenProdModal(false);
-          setEditProd(null);
-        }}
-        onSubmit={submitProducto}
-        initialData={editProd}
-        parentSubcategoria={selectedSubcategoria}
-      />
     </div>
   );
 }

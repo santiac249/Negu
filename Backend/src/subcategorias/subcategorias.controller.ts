@@ -4,11 +4,13 @@ import {
   Post,
   Body,
   Param,
-  Delete,
   Put,
+  Query,
   UploadedFile,
   UseGuards,
   UseInterceptors,
+  ParseIntPipe,
+  BadRequestException,
 } from '@nestjs/common';
 import { SubcategoriasService } from './subcategorias.service';
 import { CreateSubcategoriaDto } from './dto/create-subcategoria.dto';
@@ -20,23 +22,41 @@ import { diskStorage } from 'multer';
 import { extname } from 'path';
 
 @Controller('subcategorias')
+@UseGuards(JwtAuthGuard)
 export class SubcategoriasController {
   constructor(private readonly subcategoriasService: SubcategoriasService) {}
 
-  @UseGuards(JwtAuthGuard)
   @Get()
-  findAll() {
-    return this.subcategoriasService.findAll();
+  findAll(
+    @Query('q') query?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const pageNum = page ? parseInt(page, 10) : 1;
+    const limitNum = limit ? parseInt(limit, 10) : 50;
+    return this.subcategoriasService.findAll(query, pageNum, limitNum);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.subcategoriasService.findOne(+id);
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.subcategoriasService.findOne(id);
   }
 
-  @UseGuards(JwtAuthGuard, new RolesGuard(['Administrador']))
+  @Get(':id/productos')
+  findProductos(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('q') query?: string,
+  ) {
+    return this.subcategoriasService.findProductosBySubcategoria(id, query);
+  }
+
+  @Get(':id/categorias')
+  findCategorias(@Param('id', ParseIntPipe) id: number) {
+    return this.subcategoriasService.findCategoriasBySubcategoria(id);
+  }
+
   @Post()
+  @UseGuards(new RolesGuard(['Administrador']))
   @UseInterceptors(
     FileInterceptor('foto', {
       storage: diskStorage({
@@ -47,17 +67,31 @@ export class SubcategoriasController {
           cb(null, `${uniqueSuffix}${ext}`);
         },
       }),
+      fileFilter: (req, file, cb) => {
+        const allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+        if (allowedMimes.includes(file.mimetype)) {
+          cb(null, true);
+        } else {
+          cb(new BadRequestException('Solo se permiten imágenes (JPG, PNG, WEBP)'), false);
+        }
+      },
+      limits: {
+        fileSize: 5 * 1024 * 1024,
+      },
     }),
   )
-  create(@UploadedFile() foto: Express.Multer.File, @Body() createDto: CreateSubcategoriaDto) {
+  create(
+    @UploadedFile() foto: Express.Multer.File,
+    @Body() createDto: CreateSubcategoriaDto,
+  ) {
     if (foto) {
       createDto.foto = foto.filename;
     }
     return this.subcategoriasService.create(createDto);
   }
 
-  @UseGuards(JwtAuthGuard, new RolesGuard(['Administrador']))
   @Put(':id')
+  @UseGuards(new RolesGuard(['Administrador']))
   @UseInterceptors(
     FileInterceptor('foto', {
       storage: diskStorage({
@@ -68,24 +102,27 @@ export class SubcategoriasController {
           cb(null, `${uniqueSuffix}${ext}`);
         },
       }),
+      fileFilter: (req, file, cb) => {
+        const allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+        if (allowedMimes.includes(file.mimetype)) {
+          cb(null, true);
+        } else {
+          cb(new BadRequestException('Solo se permiten imágenes (JPG, PNG, WEBP)'), false);
+        }
+      },
+      limits: {
+        fileSize: 5 * 1024 * 1024,
+      },
     }),
   )
-  update(@Param('id') id: string, @UploadedFile() foto: Express.Multer.File, @Body() updateDto: UpdateSubcategoriaDto) {
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @UploadedFile() foto: Express.Multer.File,
+    @Body() updateDto: UpdateSubcategoriaDto,
+  ) {
     if (foto) {
       updateDto.foto = foto.filename;
     }
-    return this.subcategoriasService.update(+id, updateDto);
-  }
-
-  @UseGuards(JwtAuthGuard, new RolesGuard(['Administrador']))
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.subcategoriasService.remove(+id);
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Get(':id/categorias')
-  findCategorias(@Param('id') id: string) {
-    return this.subcategoriasService.findCategoriasBySubcategoria(+id);
+    return this.subcategoriasService.update(id, updateDto);
   }
 }

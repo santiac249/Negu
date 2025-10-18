@@ -1,8 +1,5 @@
-// src/api/productos.api.js
-
 const BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
 
-// Obtén el token desde tu store de auth si no usas localStorage
 function getToken() {
   try {
     return localStorage.getItem("token");
@@ -24,8 +21,6 @@ async function request(path, { method = "GET", body, headers = {}, auth = true }
       ...headers,
     },
     body: isForm ? body : body ? JSON.stringify(body) : undefined,
-    // Si usas cookies httpOnly en el backend, activa:
-    // credentials: "include",
   });
 
   if (res.status === 401 || res.status === 403) {
@@ -42,105 +37,94 @@ async function request(path, { method = "GET", body, headers = {}, auth = true }
   return ct.includes("application/json") ? res.json() : res.text();
 }
 
-// -------------------- Categorías --------------------
-
+// ==================== CATEGORÍAS ====================
 export function getCategorias(params = {}) {
-  const q = params.q ? `?q=${encodeURIComponent(params.q)}` : "";
-  return request(`/categorias${q}`);
+  const qs = new URLSearchParams();
+  if (params.q) qs.set("q", params.q);
+  if (params.page) qs.set("page", params.page);
+  if (params.limit) qs.set("limit", params.limit);
+  const s = qs.toString();
+  return request(`/categorias${s ? `?${s}` : ""}`);
+}
+
+export function getCategoria(id) {
+  return request(`/categorias/${id}`);
 }
 
 export function getSubcategoriasByCategoria(categoriaId, params = {}) {
-  const q = params.q ? `?q=${encodeURIComponent(params.q)}` : "";
-  return request(`/categorias/${categoriaId}/subcategorias${q}`);
+  const qs = new URLSearchParams();
+  if (params.q) qs.set("q", params.q);
+  const s = qs.toString();
+  return request(`/categorias/${categoriaId}/subcategorias${s ? `?${s}` : ""}`);
 }
 
-export function createCategoria(formDataOrJson) {
-  return request(`/categorias`, {
-    method: "POST",
-    body: formDataOrJson,
-  });
+export function createCategoria(formData) {
+  return request(`/categorias`, { method: "POST", body: formData });
 }
 
-export function updateCategoria(id, formDataOrJson) {
-  return request(`/categorias/${id}`, {
-    method: "PUT",
-    body: formDataOrJson,
-  });
+export function updateCategoria(id, formData) {
+  return request(`/categorias/${id}`, { method: "PUT", body: formData });
 }
 
-export function deleteCategoria(id) {
-  return request(`/categorias/${id}`, { method: "DELETE" });
-}
-
-// -------------------- Subcategorías --------------------
-
+// ==================== SUBCATEGORÍAS ====================
 export function getSubcategorias(params = {}) {
-  const q = params.q ? `?q=${encodeURIComponent(params.q)}` : "";
-  return request(`/subcategorias${q}`);
+  const qs = new URLSearchParams();
+  if (params.q) qs.set("q", params.q);
+  if (params.page) qs.set("page", params.page);
+  if (params.limit) qs.set("limit", params.limit);
+  const s = qs.toString();
+  return request(`/subcategorias${s ? `?${s}` : ""}`);
 }
 
-export function getCategoriasBySubcategoria(subcategoriaId) {
-  return request(`/subcategorias/${subcategoriaId}/categorias`);
+export function getSubcategoria(id) {
+  return request(`/subcategorias/${id}`);
 }
 
-export function createSubcategoria(formDataOrJson) {
-  // Si envías arrays en FormData, envíalos como JSON string:
-  // fd.append("categoriaIds", JSON.stringify([1,2,3]))
-  return request(`/subcategorias`, {
-    method: "POST",
-    body: formDataOrJson,
-  });
+export function getProductosBySubcategoria(subcategoriaId, params = {}) {
+  const qs = new URLSearchParams();
+  if (params.q) qs.set("q", params.q);
+  const s = qs.toString();
+  return request(`/subcategorias/${subcategoriaId}/productos${s ? `?${s}` : ""}`);
 }
 
-export function updateSubcategoria(id, formDataOrJson) {
-  return request(`/subcategorias/${id}`, {
-    method: "PUT",
-    body: formDataOrJson,
-  });
+export function createSubcategoria(formData) {
+  return request(`/subcategorias`, { method: "POST", body: formData });
 }
 
-export function deleteSubcategoria(id) {
-  return request(`/subcategorias/${id}`, { method: "DELETE" });
+export function updateSubcategoria(id, formData) {
+  return request(`/subcategorias/${id}`, { method: "PUT", body: formData });
 }
 
-// -------------------- Productos --------------------
-
+// ==================== PRODUCTOS ====================
 export function getProductos(params = {}) {
   const qs = new URLSearchParams();
   if (params.q) qs.set("q", params.q);
-  if (params.subcategoriaId) qs.set("subcategoriaId", params.subcategoriaId);
+  if (params.page) qs.set("page", params.page);
+  if (params.limit) qs.set("limit", params.limit);
   const s = qs.toString();
   return request(`/productos${s ? `?${s}` : ""}`);
 }
 
-// Si tienes ruta REST anidada para productos por subcategoría
-export function getProductosBySubcategoria(subcategoriaId, params = {}) {
-  const q = params.q ? `?q=${encodeURIComponent(params.q)}` : "";
-  return request(`/subcategorias/${subcategoriaId}/productos${q}`);
+export function getProducto(id) {
+  return request(`/productos/${id}`);
 }
 
-export function createProducto(formDataOrJson) {
-  // Para M:N subcategoriaIds: fd.append("subcategoriaIds", JSON.stringify([1,2]))
-  return request(`/productos`, {
-    method: "POST",
-    body: formDataOrJson,
-  });
+export function getStockByProducto(productoId) {
+  return request(`/productos/${productoId}/stock`);
 }
 
-export function updateProducto(id, formDataOrJson) {
-  return request(`/productos/${id}`, {
-    method: "PUT",
-    body: formDataOrJson,
-  });
+export function createProducto(formData) {
+  return request(`/productos`, { method: "POST", body: formData });
 }
 
-export function deleteProducto(id) {
-  return request(`/productos/${id}`, { method: "DELETE" });
+export function updateProducto(id, formData) {
+  return request(`/productos/${id}`, { method: "PUT", body: formData });
 }
 
-// -------------------- Marcas (auxiliar para formulario) --------------------
-
+// ==================== MARCAS ====================
 export function getMarcas(params = {}) {
-  const q = params.q ? `?q=${encodeURIComponent(params.q)}` : "";
-  return request(`/marcas${q}`);
+  const qs = new URLSearchParams();
+  if (params.q) qs.set("q", params.q);
+  const s = qs.toString();
+  return request(`/marcas${s ? `?${s}` : ""}`);
 }
