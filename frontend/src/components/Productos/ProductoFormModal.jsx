@@ -231,7 +231,99 @@ export default function ProductoFormModal({
   };
 
   // Submit
-  const handleSubmit = async (e) => {
+  // Submit
+const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  if (!validate()) return;
+
+  setLoading(true);
+  try {
+    const formDataToSend = new FormData();
+
+    console.log("=== FormData que se enviará al backend ===");
+
+    // ✅ CATEGORÍAS
+    if (mode === 'create-categoria' || mode === 'edit-categoria') {
+      formDataToSend.append('categoria', formData.categoria.trim());
+      if (formData.descripcion)
+        formDataToSend.append('descripcion', formData.descripcion.trim());
+      if (formData.foto) formDataToSend.append('foto', formData.foto);
+
+      if (mode === 'create-categoria') {
+        await createCategoria(formDataToSend);
+      } else if (mode === 'edit-categoria') {
+        if (!item || !item.id)
+          throw new Error('No se encontró la categoría a actualizar.');
+        await updateCategoria(item.id, formDataToSend);
+      }
+    }
+
+    // ✅ SUBCATEGORÍAS
+    else if (mode === 'create-subcategoria' || mode === 'edit-subcategoria') {
+      formDataToSend.append('subcategoria', formData.subcategoria.trim());
+      if (formData.descripcion)
+        formDataToSend.append('descripcion', formData.descripcion.trim());
+
+      // ✅ Normalizar y enviar como múltiple append
+      const categoriaIds = Array.isArray(formData.categoriaIds)
+        ? formData.categoriaIds
+        : [formData.categoriaIds];
+
+      categoriaIds.forEach((id) => {
+        formDataToSend.append('categoriaIds', Number(id)); // enviar como número
+      });
+
+      if (formData.foto) formDataToSend.append('foto', formData.foto);
+
+      for (let [key, value] of formDataToSend.entries()) {
+        console.log(key, value);
+      }
+
+      console.log(formDataToSend.getAll('categoriaIds'));
+
+      if (mode === 'create-subcategoria') {
+        await createSubcategoria(formDataToSend);
+      } else if (mode === 'edit-subcategoria') {
+        if (!item || !item.id)
+          throw new Error('No se encontró la subcategoría a actualizar.');
+        await updateSubcategoria(item.id, formDataToSend);
+      }
+    }
+
+    // ✅ PRODUCTOS
+    else if (mode === 'create-producto' || mode === 'edit-producto') {
+      formDataToSend.append('nombre', formData.nombre.trim());
+      if (formData.descripcion)
+        formDataToSend.append('descripcion', formData.descripcion.trim());
+      formDataToSend.append('marca_id', formData.marca_id);
+      formDataToSend.append(
+        'subcategoriaIds',
+        JSON.stringify(formData.subcategoriaIds)
+      );
+      if (formData.foto) formDataToSend.append('foto', formData.foto);
+
+      if (mode === 'create-producto') {
+        await createProducto(formDataToSend);
+      } else if (mode === 'edit-producto') {
+        if (!item || !item.id)
+          throw new Error('No se encontró el producto a actualizar.');
+        await updateProducto(item.id, formDataToSend);
+      }
+    }
+
+    // ✅ Si todo sale bien
+    onSuccess();
+  } catch (error) {
+    alert('Error en la creación: ' + (error.message || 'No se pudo completar la operación'));
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+
+/*   const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!validate()) return;
@@ -260,7 +352,10 @@ export default function ProductoFormModal({
           await createSubcategoria(formDataToSend);
         } else {
           await updateSubcategoria(item.id, formDataToSend);
-        }
+        } 
+
+
+
       } else if (mode.includes('producto')) {
         formDataToSend.append('nombre', formData.nombre.trim());
         if (formData.descripcion) formDataToSend.append('descripcion', formData.descripcion.trim());
@@ -282,6 +377,8 @@ export default function ProductoFormModal({
       setLoading(false);
     }
   };
+ */
+  /////////////////////////////////////////////////////////////////////////////////////
 
    return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4">

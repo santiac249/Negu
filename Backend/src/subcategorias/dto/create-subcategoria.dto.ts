@@ -28,21 +28,36 @@ export class CreateSubcategoriaDto {
   @IsString()
   foto?: string;
 
-  // IDs de categorías padres (M:N)
+  // ✅ IDs de categorías padres (M:N)
+  @Transform(({ value }) => {
+    if (!value) return [];
+
+    // Si viene como string tipo "[1,2]" o "1"
+    if (typeof value === 'string') {
+      // Caso JSON: "[1,2]"
+      if (value.startsWith('[')) {
+        try {
+          const parsed = JSON.parse(value);
+          return Array.isArray(parsed) ? parsed.map(Number) : [Number(parsed)];
+        } catch {
+          return [Number(value)];
+        }
+      }
+
+      // Caso simple: "4"
+      return [Number(value)];
+    }
+
+    // Si viene como array tipo ["4", "5"]
+    if (Array.isArray(value)) {
+      return value.map((v) => Number(v));
+    }
+
+    return [];
+  })
   @IsArray({ message: 'categoriaIds debe ser un array' })
-  @ArrayNotEmpty({ message: 'Debe seleccionar al menos una categoría' })
+  @ArrayNotEmpty({ message: 'Debe seleccionar al menos una categoríaaa' })
   @IsInt({ each: true, message: 'Cada categoriaId debe ser un número entero' })
   @Type(() => Number)
-  @Transform(({ value }) => {
-    // Si viene como string JSON, parsearlo
-    if (typeof value === 'string') {
-      try {
-        return JSON.parse(value);
-      } catch {
-        return value;
-      }
-    }
-    return value;
-  })
   categoriaIds: number[];
 }
