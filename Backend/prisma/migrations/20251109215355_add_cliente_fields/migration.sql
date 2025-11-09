@@ -152,6 +152,9 @@ CREATE TABLE `Clientes` (
     `telefono` VARCHAR(191) NULL,
     `documento` VARCHAR(191) NULL,
     `direccion` VARCHAR(191) NULL,
+    `foto` VARCHAR(191) NULL,
+    `fecha_nacimiento` DATETIME(3) NULL,
+    `sexo` VARCHAR(191) NULL,
     `f_creacion` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
     UNIQUE INDEX `Clientes_documento_key`(`documento`),

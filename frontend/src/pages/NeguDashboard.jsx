@@ -21,6 +21,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../store/auth";
 import SessionErrorModal from "@/components/SessionErrorModal";
+import Clientes from "./Clientes";
 
 const ROLE_LABEL_BY_ID = {
   1: "Administrador",
@@ -31,6 +32,7 @@ const MENU_BY_ROLE = {
   Administrador: [
     { key: "inicio", label: "Inicio", icon: Home },
     { key: "usuarios", label: "Usuarios", icon: UserCircle2 },
+    { key: "clientes", label: "Clientes", icon: UserCircle2 },
     { key: "proveedores", label: "Proveedores", icon: Package }, // agregado aquí
     { key: "marcas", label: "Marcas", icon: Package },
     { key: "productos", label: "Productos", icon: Package },
@@ -42,6 +44,7 @@ const MENU_BY_ROLE = {
   ],
   Vendedor: [
     { key: "inicio", label: "Inicio", icon: Home },
+    { key: "clientes", label: "Clientes", icon: UserCircle2 },
     { key: "productos", label: "Productos", icon: Package },
     { key: "stock", label: "Stock", icon: PackageCheck },
     { key: "vender", label: "Vender", icon: ShoppingCart },
@@ -153,6 +156,7 @@ function ContentArea({ role, activeKey }) {
     const base = {
       inicio: "Inicio",
       usuarios: "Usuarios",
+      clientes: "Clientes",
       proveedores: "Proveedores",
       marcas: "Marcas",
       productos: "Productos",
@@ -173,6 +177,7 @@ function ContentArea({ role, activeKey }) {
       />
     ),
     usuarios: <Usuarios />,
+    clientes: <Clientes />,
     proveedores: role === "Administrador" ? <Proveedores /> : <PlaceholderCard title="Acceso denegado" description="No tienes permisos para acceder a esta sección." />,
     marcas: role === "Administrador" ? <Marcas /> : <PlaceholderCard title="Acceso denegado" description="No tienes permisos para acceder a esta sección." />,
     productos: <Productos />,

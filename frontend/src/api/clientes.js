@@ -12,7 +12,7 @@ async function request(path, { method = "GET", body, headers = {}, auth = true }
   const url = `${BASE_URL}${path}`;
   const token = getToken();
   const isForm = body instanceof FormData;
-  
+
   const res = await fetch(url, {
     method,
     headers: {
@@ -23,46 +23,52 @@ async function request(path, { method = "GET", body, headers = {}, auth = true }
     body: isForm ? body : body ? JSON.stringify(body) : undefined,
   });
 
+  const ct = res.headers.get("content-type") || "";
+  let responseBody;
+
+  if (ct.includes("application/json")) {
+    responseBody = await res.json();
+  } else {
+    responseBody = await res.text();
+  }
+
   if (res.status === 401 || res.status === 403) {
-    const text = await res.text().catch(() => "");
-    throw new Error(text || "Unauthorized");
+    throw new Error(responseBody?.message || "No autorizado");
   }
 
   if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(text || `HTTP ${res.status}`);
+    const errorMsg = responseBody?.message || responseBody?.error || `Error HTTP ${res.status}`;
+    throw new Error(errorMsg);
   }
 
-  const ct = res.headers.get("content-type") || "";
-  return ct.includes("application/json") ? res.json() : res.text();
+  return responseBody;
 }
 
-// Clientes CRUD
-export function getClientes(params = {}) {
+export async function getClientes(params = {}) {
   const qs = new URLSearchParams();
   if (params.q) qs.set("q", params.q);
   const s = qs.toString();
   return request(`/clientes${s ? `?${s}` : ""}`);
 }
 
-export function getCliente(id) {
+export async function getClienteById(id) {
   return request(`/clientes/${id}`);
 }
 
-export function createCliente(data) {
+export async function createCliente(formDataOrJson) {
   return request(`/clientes`, {
     method: "POST",
-    body: data,
+    body: formDataOrJson,
   });
 }
 
-export function updateCliente(id, data) {
+export async function updateCliente(id, formDataOrJson) {
   return request(`/clientes/${id}`, {
     method: "PUT",
-    body: data,
+    body: formDataOrJson,
   });
 }
 
-export function deleteCliente(id) {
+export async function deleteCliente(id) {
   return request(`/clientes/${id}`, { method: "DELETE" });
 }

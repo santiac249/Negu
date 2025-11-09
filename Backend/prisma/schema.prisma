@@ -152,6 +152,9 @@ model Clientes {
   telefono   String?
   documento  String? @unique
   direccion  String?
+  foto            String?           // Nueva: foto opcional
+  fecha_nacimiento DateTime?         // Nueva: fecha de nacimiento
+  sexo            String?            // Nueva: M/F/Otro
   f_creacion DateTime @default(now())
   ventas     Ventas[]
   planSepares   PlanSepare[]
