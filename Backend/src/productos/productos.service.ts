@@ -155,16 +155,17 @@ export class ProductosService {
     // Verificar unicidad del nombre (opcional, según tu lógica de negocio)
     const existing = await this.prisma.productos.findFirst({
       where: { 
-        nombre: { 
-          equals: data.nombre.trim(), 
-          //mode: 'insensitive' as any 
-        } 
+        nombre: { equals: data.nombre.trim() },
+        subcategorias: {
+          some: { id: { in: data.subcategoriaIds } }
+        },
+        marca_id: { equals: data.marca_id }
       },
     });
 
     if (existing) {
       throw new ConflictException(
-        `Ya existe un producto con el nombre "${data.nombre}"`
+        `Ya existe un producto con el nombre "${data.nombre}" y la marca "${marca.marca}"`
       );
     }
 

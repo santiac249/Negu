@@ -34,19 +34,29 @@ export class CreateProductoDto {
   foto?: string;
 
   // IDs de subcategorías padres (M:N)
+  @Transform(({ value }) => {
+    if (!value) return [];
+    // Si viene como string tipo '[3,5]' o '4'
+    if (typeof value === 'string') {
+      if (value.startsWith('[')) {
+        try {
+          const arr = JSON.parse(value);
+          return Array.isArray(arr) ? arr.map(Number) : [Number(arr)];
+        } catch {
+          return [Number(value)];
+        }
+      }
+      // caso simple: '5'
+      return [Number(value)];
+    }
+    // Si viene como array tipo ['5','6']
+    if (Array.isArray(value)) {
+      return value.map((v) => Number(v));
+    }
+    return [];
+  })
   @IsArray({ message: 'subcategoriaIds debe ser un array' })
   @ArrayNotEmpty({ message: 'Debe seleccionar al menos una subcategoría' })
   @IsInt({ each: true, message: 'Cada subcategoriaId debe ser un número entero' })
-  @Type(() => Number)
-  @Transform(({ value }) => {
-    if (typeof value === 'string') {
-      try {
-        return JSON.parse(value);
-      } catch {
-        return value;
-      }
-    }
-    return value;
-  })
   subcategoriaIds: number[];
 }

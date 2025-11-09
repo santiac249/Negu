@@ -269,7 +269,7 @@ const handleSubmit = async (e) => {
       const categoriaIds = Array.isArray(formData.categoriaIds)
         ? formData.categoriaIds
         : [formData.categoriaIds];
-
+      
       categoriaIds.forEach((id) => {
         formDataToSend.append('categoriaIds', Number(id)); // enviar como número
       });
@@ -296,11 +296,21 @@ const handleSubmit = async (e) => {
       formDataToSend.append('nombre', formData.nombre.trim());
       if (formData.descripcion)
         formDataToSend.append('descripcion', formData.descripcion.trim());
-      formDataToSend.append('marca_id', formData.marca_id);
-      formDataToSend.append(
+      formDataToSend.append('marca_id', Number(formData.marca_id));
+
+      // ✅ Normalizar y enviar como múltiple append
+      const subcategoriaIds = Array.isArray(formData.subcategoriaIds)
+        ? formData.subcategoriaIds
+        : [formData.subcategoriaIds];
+
+      subcategoriaIds.forEach((id) => {
+        formDataToSend.append('subcategoriaIds', Number(id)); // enviar como número
+      });
+
+/*       formDataToSend.append(
         'subcategoriaIds',
         JSON.stringify(formData.subcategoriaIds)
-      );
+      ); */
       if (formData.foto) formDataToSend.append('foto', formData.foto);
 
       if (mode === 'create-producto') {

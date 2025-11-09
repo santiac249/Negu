@@ -137,13 +137,13 @@ export class SubcategoriasService {
   }
 
   async create(data: CreateSubcategoriaDto) {
-    // Verificar unicidad
+    // Verificar unicidad que en la misma categoría no exista otra subcategoría con el mismo nombre
     const existing = await this.prisma.subcategorias.findFirst({
-      where: { 
-        subcategoria: { 
-          equals: data.subcategoria.trim(), 
-          //mode: 'insensitive' as any 
-        } 
+      where: {
+        subcategoria: { equals: data.subcategoria.trim() },
+        categorias: {
+          some: { id: { in: data.categoriaIds } }
+        }
       },
     });
 
