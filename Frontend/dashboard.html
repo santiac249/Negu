@@ -1,0 +1,1220 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Negu - Dashboard de Ventas y Gastos</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #1e40af;
+            --primary-dark: #1e3a8a;
+            --secondary: #7c3aed;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-400: #9ca3af;
+            --gray-500: #6b7280;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--gray-50);
+            color: var(--gray-900);
+        }
+
+        .app-container {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background-color: var(--gray-900);
+            color: white;
+            padding: 20px;
+            position: fixed;
+            height: 100vh;
+            width: 250px;
+            overflow-y: auto;
+            box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-menu {
+            list-style: none;
+        }
+
+        .nav-item {
+            margin-bottom: 10px;
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            padding: 12px 16px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+            flex: 1;
+        }
+
+        .header {
+            background-color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 28px;
+            color: var(--gray-900);
+        }
+
+        .filters {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .filter-group label {
+            font-weight: 600;
+            color: var(--gray-700);
+        }
+
+        input, select {
+            padding: 8px 12px;
+            border: 1px solid var(--gray-300);
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+        }
+
+        button {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(30, 64, 175, 0.3);
+        }
+
+        .btn-secondary {
+            background-color: var(--secondary);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background-color: #6d28d9;
+        }
+
+        .btn-success {
+            background-color: var(--success);
+            color: white;
+        }
+
+        .btn-danger {
+            background-color: var(--danger);
+            color: white;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        /* Cards Grid */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background-color: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transform: translateY(-4px);
+        }
+
+        .card-title {
+            font-size: 14px;
+            color: var(--gray-500);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .card-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--gray-900);
+            margin-bottom: 10px;
+        }
+
+        .card-stat {
+            font-size: 12px;
+            color: var(--gray-500);
+        }
+
+        .card-stat.positive {
+            color: var(--success);
+        }
+
+        .card-stat.negative {
+            color: var(--danger);
+        }
+
+        /* Table */
+        .table-container {
+            background-color: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background-color: var(--gray-100);
+            border-bottom: 2px solid var(--gray-200);
+        }
+
+        th {
+            padding: 16px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--gray-700);
+            font-size: 14px;
+        }
+
+        tbody tr {
+            border-bottom: 1px solid var(--gray-200);
+            transition: background-color 0.2s ease;
+        }
+
+        tbody tr:hover {
+            background-color: var(--gray-50);
+        }
+
+        td {
+            padding: 16px;
+            font-size: 14px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-completada {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+
+        .status-cancelada {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+        }
+
+        .status-operativo {
+            background-color: rgba(30, 64, 175, 0.1);
+            color: var(--primary);
+        }
+
+        .status-no-operativo {
+            background-color: rgba(107, 114, 128, 0.1);
+            color: var(--gray-600);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideUp 0.3s ease;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--gray-200);
+            padding-bottom: 15px;
+        }
+
+        .modal-header h2 {
+            font-size: 20px;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--gray-500);
+            padding: 0;
+        }
+
+        .modal-close:hover {
+            color: var(--gray-900);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--gray-700);
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--gray-300);
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+            font-family: inherit;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 30px;
+            border-top: 2px solid var(--gray-200);
+            padding-top: 20px;
+        }
+
+        /* Loading and Empty States */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--gray-500);
+        }
+
+        .spinner {
+            border: 4px solid var(--gray-200);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--gray-500);
+        }
+
+        .empty-state svg {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(30px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Alert */
+        .alert {
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+        }
+
+        .alert-success {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            border-left: 4px solid var(--success);
+        }
+
+        .alert-error {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            border-left: 4px solid var(--danger);
+        }
+
+        .alert-warning {
+            background-color: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+            border-left: 4px solid var(--warning);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .app-container {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                position: absolute;
+                left: 0;
+                z-index: 999;
+                width: 250px;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .cards-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .filters {
+                flex-direction: column;
+            }
+
+            .filter-group {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .filter-group input,
+            .filter-group select {
+                width: 100%;
+            }
+        }
+
+        .hide {
+            display: none !important;
+        }
+
+        .tab-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--gray-200);
+        }
+
+        .tab-button {
+            padding: 12px 16px;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            color: var(--gray-500);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .tab-button.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">📊 Negu</div>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a class="nav-link active" data-tab="dashboard">📈 Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-tab="ventas">💰 Ventas</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-tab="gastos">💸 Gastos</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-tab="reportes">📑 Reportes</a>
+                </li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Dashboard Tab -->
+            <div class="tab-content active" id="dashboard">
+                <div class="header">
+                    <h1>Dashboard</h1>
+                </div>
+
+                <!-- KPI Cards -->
+                <div class="cards-grid">
+                    <div class="card">
+                        <div class="card-title">Ventas Este Mes</div>
+                        <div class="card-value" id="ventasTotal">$0</div>
+                        <div class="card-stat positive" id="ventasCount">0 transacciones</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">Gastos Este Mes</div>
+                        <div class="card-value" id="gastosTotal">$0</div>
+                        <div class="card-stat" id="gastosCount">0 registros</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">Ganancia Neta</div>
+                        <div class="card-value" id="ganancia">$0</div>
+                        <div class="card-stat positive" id="gananciaPercent">0%</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">Promedio Venta</div>
+                        <div class="card-value" id="promedioVenta">$0</div>
+                        <div class="card-stat" id="promedioInfo">-</div>
+                    </div>
+                </div>
+
+                <!-- Resumen por Tipo -->
+                <div class="cards-grid">
+                    <div class="card">
+                        <div class="card-title">Top Método de Pago</div>
+                        <div id="topMetodoPago" style="font-size: 18px; font-weight: 600; margin-top: 10px;">-</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">Gastos por Tipo</div>
+                        <div id="gastosPorTipo" style="font-size: 14px; margin-top: 10px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ventas Tab -->
+            <div class="tab-content" id="ventas">
+                <div class="header">
+                    <h1>Gestión de Ventas</h1>
+                    <button class="btn-primary" id="btnNuevaVenta">+ Nueva Venta</button>
+                </div>
+
+                <div class="filters">
+                    <div class="filter-group">
+                        <label>Fecha Inicio:</label>
+                        <input type="date" id="ventasFechaInicio">
+                    </div>
+                    <div class="filter-group">
+                        <label>Fecha Fin:</label>
+                        <input type="date" id="ventasFechaFin">
+                    </div>
+                    <div class="filter-group">
+                        <label>Estado:</label>
+                        <select id="ventasEstado">
+                            <option value="">Todos</option>
+                            <option value="Completada">Completada</option>
+                            <option value="Cancelada">Cancelada</option>
+                        </select>
+                    </div>
+                    <button class="btn-primary" id="btnFiltrarVentas">Filtrar</button>
+                </div>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Cliente</th>
+                                <th>Usuario</th>
+                                <th>Total</th>
+                                <th>Descuento</th>
+                                <th>Método Pago</th>
+                                <th>Estado</th>
+                                <th>Fecha</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ventasTableBody">
+                            <tr>
+                                <td colspan="9" class="loading">Cargando ventas...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div style="display: flex; justify-content: center; gap: 10px; margin-top: 20px;">
+                    <button class="btn-secondary" id="btnVentasAnterior" disabled>← Anterior</button>
+                    <span id="ventasPageInfo" style="padding: 10px; color: var(--gray-700);">Página 1</span>
+                    <button class="btn-secondary" id="btnVentasSiguiente">Siguiente →</button>
+                </div>
+            </div>
+
+            <!-- Gastos Tab -->
+            <div class="tab-content" id="gastos">
+                <div class="header">
+                    <h1>Gestión de Gastos</h1>
+                    <button class="btn-primary" id="btnNuevoGasto">+ Nuevo Gasto</button>
+                </div>
+
+                <div class="filters">
+                    <div class="filter-group">
+                        <label>Fecha Inicio:</label>
+                        <input type="date" id="gastosFechaInicio">
+                    </div>
+                    <div class="filter-group">
+                        <label>Fecha Fin:</label>
+                        <input type="date" id="gastosFechaFin">
+                    </div>
+                    <div class="filter-group">
+                        <label>Tipo:</label>
+                        <select id="gastosTipo">
+                            <option value="">Todos</option>
+                            <option value="Operativo">Operativo</option>
+                            <option value="No Operativo">No Operativo</option>
+                        </select>
+                    </div>
+                    <button class="btn-primary" id="btnFiltrarGastos">Filtrar</button>
+                </div>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Concepto</th>
+                                <th>Monto</th>
+                                <th>Tipo</th>
+                                <th>Proveedor</th>
+                                <th>Usuario</th>
+                                <th>Fecha</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="gastosTableBody">
+                            <tr>
+                                <td colspan="8" class="loading">Cargando gastos...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div style="display: flex; justify-content: center; gap: 10px; margin-top: 20px;">
+                    <button class="btn-secondary" id="btnGastosAnterior" disabled>← Anterior</button>
+                    <span id="gastosPageInfo" style="padding: 10px; color: var(--gray-700);">Página 1</span>
+                    <button class="btn-secondary" id="btnGastosSiguiente">Siguiente →</button>
+                </div>
+            </div>
+
+            <!-- Reportes Tab -->
+            <div class="tab-content" id="reportes">
+                <div class="header">
+                    <h1>Reportes</h1>
+                </div>
+
+                <div class="filters">
+                    <div class="filter-group">
+                        <label>Fecha Inicio:</label>
+                        <input type="date" id="reporteFechaInicio">
+                    </div>
+                    <div class="filter-group">
+                        <label>Fecha Fin:</label>
+                        <input type="date" id="reporteFechaFin">
+                    </div>
+                    <button class="btn-primary" id="btnGenerarReporte">Generar Reporte</button>
+                </div>
+
+                <div id="reporteContent" style="margin-top: 20px;"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal para Nueva Venta -->
+    <div class="modal" id="modalVenta">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Nueva Venta</h2>
+                <button class="modal-close" onclick="closeModal('modalVenta')">✕</button>
+            </div>
+            <div id="alertVenta"></div>
+            <div class="form-group">
+                <label>Cliente ID:</label>
+                <input type="number" id="ventaClienteId" placeholder="ID del cliente">
+            </div>
+            <div class="form-group">
+                <label>Usuario ID:</label>
+                <input type="number" id="ventaUsuarioId" placeholder="ID del usuario" value="1">
+            </div>
+            <div class="form-group">
+                <label>Método Pago ID:</label>
+                <input type="number" id="ventaMetPagoId" placeholder="ID método pago" value="1">
+            </div>
+            <div class="form-group">
+                <label>Stock ID:</label>
+                <input type="number" id="ventaStockId" placeholder="ID del stock">
+            </div>
+            <div class="form-group">
+                <label>Cantidad:</label>
+                <input type="number" id="ventaCantidad" placeholder="Cantidad" min="1" value="1">
+            </div>
+            <div class="form-group">
+                <label>Precio:</label>
+                <input type="number" id="ventaPrecio" placeholder="Precio" min="0" step="0.01" value="0">
+            </div>
+            <div class="form-group">
+                <label>Descuento:</label>
+                <input type="number" id="ventaDescuento" placeholder="Descuento" min="0" value="0">
+            </div>
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="closeModal('modalVenta')">Cancelar</button>
+                <button class="btn-primary" id="btnGuardarVenta">Guardar Venta</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Nuevo Gasto -->
+    <div class="modal" id="modalGasto">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Nuevo Gasto</h2>
+                <button class="modal-close" onclick="closeModal('modalGasto')">✕</button>
+            </div>
+            <div id="alertGasto"></div>
+            <div class="form-group">
+                <label>Concepto:</label>
+                <input type="text" id="gastoConcepto" placeholder="Concepto del gasto">
+            </div>
+            <div class="form-group">
+                <label>Monto:</label>
+                <input type="number" id="gastoMonto" placeholder="Monto" min="0" step="0.01" value="0">
+            </div>
+            <div class="form-group">
+                <label>Tipo:</label>
+                <select id="gastoTipo">
+                    <option value="Operativo">Operativo</option>
+                    <option value="No Operativo">No Operativo</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Usuario ID:</label>
+                <input type="number" id="gastoUsuarioId" placeholder="ID del usuario" value="1">
+            </div>
+            <div class="form-group">
+                <label>Proveedor ID (opcional):</label>
+                <input type="number" id="gastoProveedorId" placeholder="ID del proveedor">
+            </div>
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="closeModal('modalGasto')">Cancelar</button>
+                <button class="btn-primary" id="btnGuardarGasto">Guardar Gasto</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const API_BASE = 'http://localhost:3000';
+
+        // State
+        let currentPage = {
+            ventas: 1,
+            gastos: 1
+        };
+
+        let filters = {
+            ventas: {},
+            gastos: {}
+        };
+
+        // Utility Functions
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('es-CO', {
+                style: 'currency',
+                currency: 'COP',
+                minimumFractionDigits: 0
+            }).format(value);
+        }
+
+        function formatDate(dateString) {
+            return new Date(dateString).toLocaleDateString('es-CO');
+        }
+
+        function showAlert(containerId, message, type = 'success') {
+            const alertDiv = document.getElementById(containerId);
+            alertDiv.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+            setTimeout(() => {
+                alertDiv.innerHTML = '';
+            }, 5000);
+        }
+
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('show');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('show');
+        }
+
+        // Tab Navigation
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                const tabId = e.target.getAttribute('data-tab');
+                switchTab(tabId);
+            });
+        });
+
+        function switchTab(tabId) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Deactivate all nav links
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(tabId).classList.add('active');
+            document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+
+            // Load data for tab
+            if (tabId === 'ventas') loadVentas();
+            if (tabId === 'gastos') loadGastos();
+            if (tabId === 'dashboard') loadDashboard();
+        }
+
+        // Load Dashboard
+        async function loadDashboard() {
+            try {
+                const today = new Date();
+                const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+                const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+                const [ventasRes, gastosRes] = await Promise.all([
+                    fetch(`${API_BASE}/ventas/total-periodo?fechaInicio=${firstDay.toISOString()}&fechaFin=${lastDay.toISOString()}`),
+                    fetch(`${API_BASE}/gastos/total-periodo?fechaInicio=${firstDay.toISOString()}&fechaFin=${lastDay.toISOString()}`)
+                ]);
+
+                const ventasData = await ventasRes.json();
+                const gastosData = await gastosRes.json();
+
+                const totalVentas = ventasData.totalVentas || 0;
+                const totalGastos = gastosData.total || 0;
+                const ganancia = totalVentas - totalGastos;
+
+                document.getElementById('ventasTotal').textContent = formatCurrency(totalVentas);
+                document.getElementById('ventasCount').textContent = `${ventasData.cantidad || 0} transacciones`;
+                document.getElementById('gastosTotal').textContent = formatCurrency(totalGastos);
+                document.getElementById('gastosCount').textContent = `${gastosData.cantidad || 0} registros`;
+                document.getElementById('ganancia').textContent = formatCurrency(ganancia);
+                document.getElementById('gananciaPercent').textContent = totalVentas > 0 ? `${((ganancia / totalVentas) * 100).toFixed(1)}%` : '0%';
+                document.getElementById('promedioVenta').textContent = formatCurrency(ventasData.promedioVenta || 0);
+                document.getElementById('promedioInfo').textContent = `${ventasData.cantidad || 0} ventas`;
+
+                // Load summary data
+                const [metodoPagoRes, gastosTipoRes] = await Promise.all([
+                    fetch(`${API_BASE}/ventas/analisis/resumen-metodo-pago`),
+                    fetch(`${API_BASE}/gastos/resumen/por-tipo`)
+                ]);
+
+                const metodos = await metodoPagoRes.json();
+                const gastosTipo = await gastosTipoRes.json();
+
+                if (metodos.length > 0) {
+                    const topMetodo = metodos.reduce((a, b) => a.cantidad > b.cantidad ? a : b);
+                    document.getElementById('topMetodoPago').textContent = `${topMetodo.metodo} (${topMetodo.cantidad})`;
+                }
+
+                if (gastosTipo.length > 0) {
+                    const gastosHtml = gastosTipo.map(g => 
+                        `<div style="margin: 8px 0;">${g.tipo}: ${formatCurrency(g.total)} (${g.cantidad})</div>`
+                    ).join('');
+                    document.getElementById('gastosPorTipo').innerHTML = gastosHtml;
+                }
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+            }
+        }
+
+        // Load Ventas
+        async function loadVentas(page = 1) {
+            try {
+                currentPage.ventas = page;
+                const params = new URLSearchParams({
+                    page,
+                    limit: 10,
+                    ...filters.ventas
+                });
+
+                const response = await fetch(`${API_BASE}/ventas?${params}`);
+                const data = await response.json();
+
+                let html = '';
+                if (data.data && data.data.length > 0) {
+                    html = data.data.map(venta => `
+                        <tr>
+                            <td>${venta.id}</td>
+                            <td>${venta.cliente?.nombre || '-'}</td>
+                            <td>${venta.usuario?.nombre || '-'}</td>
+                            <td>${formatCurrency(venta.total)}</td>
+                            <td>${formatCurrency(venta.descuento)}</td>
+                            <td>${venta.metodoPago?.metodo || '-'}</td>
+                            <td><span class="status-badge status-${venta.estado.toLowerCase()}">${venta.estado}</span></td>
+                            <td>${formatDate(venta.fecha)}</td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn-secondary btn-small" onclick="verDetalleVenta(${venta.id})">Ver</button>
+                                    <button class="btn-danger btn-small" onclick="cancelarVenta(${venta.id})">Cancelar</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `).join('');
+                } else {
+                    html = '<tr><td colspan="9" class="empty-state">No hay ventas registradas</td></tr>';
+                }
+
+                document.getElementById('ventasTableBody').innerHTML = html;
+                document.getElementById('ventasPageInfo').textContent = `Página ${data.page} de ${data.pages}`;
+                document.getElementById('btnVentasAnterior').disabled = data.page === 1;
+                document.getElementById('btnVentasSiguiente').disabled = data.page >= data.pages;
+            } catch (error) {
+                console.error('Error loading ventas:', error);
+                document.getElementById('ventasTableBody').innerHTML = `<tr><td colspan="9" class="empty-state">Error cargando ventas</td></tr>`;
+            }
+        }
+
+        // Load Gastos
+        async function loadGastos(page = 1) {
+            try {
+                currentPage.gastos = page;
+                const params = new URLSearchParams({
+                    page,
+                    limit: 10,
+                    ...filters.gastos
+                });
+
+                const response = await fetch(`${API_BASE}/gastos?${params}`);
+                const data = await response.json();
+
+                let html = '';
+                if (data.data && data.data.length > 0) {
+                    html = data.data.map(gasto => `
+                        <tr>
+                            <td>${gasto.id}</td>
+                            <td>${gasto.concepto}</td>
+                            <td>${formatCurrency(gasto.monto)}</td>
+                            <td><span class="status-badge status-${gasto.tipo.toLowerCase().replace(' ', '-')}">${gasto.tipo}</span></td>
+                            <td>${gasto.proveedor?.nombre || '-'}</td>
+                            <td>${gasto.usuario?.nombre || '-'}</td>
+                            <td>${formatDate(gasto.fecha)}</td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn-secondary btn-small" onclick="editarGasto(${gasto.id})">Editar</button>
+                                    <button class="btn-danger btn-small" onclick="eliminarGasto(${gasto.id})">Eliminar</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `).join('');
+                } else {
+                    html = '<tr><td colspan="8" class="empty-state">No hay gastos registrados</td></tr>';
+                }
+
+                document.getElementById('gastosTableBody').innerHTML = html;
+                document.getElementById('gastosPageInfo').textContent = `Página ${data.page} de ${data.pages}`;
+                document.getElementById('btnGastosAnterior').disabled = data.page === 1;
+                document.getElementById('btnGastosSiguiente').disabled = data.page >= data.pages;
+            } catch (error) {
+                console.error('Error loading gastos:', error);
+                document.getElementById('gastosTableBody').innerHTML = `<tr><td colspan="8" class="empty-state">Error cargando gastos</td></tr>`;
+            }
+        }
+
+        // Event Listeners
+        document.getElementById('btnNuevaVenta').addEventListener('click', () => openModal('modalVenta'));
+        document.getElementById('btnNuevoGasto').addEventListener('click', () => openModal('modalGasto'));
+
+        document.getElementById('btnGuardarVenta').addEventListener('click', async () => {
+            try {
+                const ventaData = {
+                    clienteId: parseInt(document.getElementById('ventaClienteId').value),
+                    usuarioId: parseInt(document.getElementById('ventaUsuarioId').value),
+                    metPagoId: parseInt(document.getElementById('ventaMetPagoId').value),
+                    descuento: parseFloat(document.getElementById('ventaDescuento').value) || 0,
+                    detalles: [{
+                        stockId: parseInt(document.getElementById('ventaStockId').value),
+                        cantidad: parseInt(document.getElementById('ventaCantidad').value),
+                        precio: parseFloat(document.getElementById('ventaPrecio').value)
+                    }]
+                };
+
+                const response = await fetch(`${API_BASE}/ventas`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(ventaData)
+                });
+
+                if (response.ok) {
+                    showAlert('alertVenta', 'Venta creada exitosamente', 'success');
+                    closeModal('modalVenta');
+                    document.getElementById('modalVenta').querySelector('form').reset();
+                    loadVentas();
+                } else {
+                    const error = await response.json();
+                    showAlert('alertVenta', error.message || 'Error creando venta', 'error');
+                }
+            } catch (error) {
+                showAlert('alertVenta', error.message, 'error');
+            }
+        });
+
+        document.getElementById('btnGuardarGasto').addEventListener('click', async () => {
+            try {
+                const gastoData = {
+                    concepto: document.getElementById('gastoConcepto').value,
+                    monto: parseFloat(document.getElementById('gastoMonto').value),
+                    tipo: document.getElementById('gastoTipo').value,
+                    usuarioId: parseInt(document.getElementById('gastoUsuarioId').value),
+                    proveedorId: document.getElementById('gastoProveedorId').value ? parseInt(document.getElementById('gastoProveedorId').value) : null
+                };
+
+                const response = await fetch(`${API_BASE}/gastos`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(gastoData)
+                });
+
+                if (response.ok) {
+                    showAlert('alertGasto', 'Gasto creado exitosamente', 'success');
+                    closeModal('modalGasto');
+                    document.getElementById('gastoConcepto').value = '';
+                    document.getElementById('gastoMonto').value = '0';
+                    loadGastos();
+                } else {
+                    const error = await response.json();
+                    showAlert('alertGasto', error.message || 'Error creando gasto', 'error');
+                }
+            } catch (error) {
+                showAlert('alertGasto', error.message, 'error');
+            }
+        });
+
+        document.getElementById('btnFiltrarVentas').addEventListener('click', () => {
+            filters.ventas = {
+                ...(document.getElementById('ventasFechaInicio').value && { fechaInicio: document.getElementById('ventasFechaInicio').value }),
+                ...(document.getElementById('ventasFechaFin').value && { fechaFin: document.getElementById('ventasFechaFin').value }),
+                ...(document.getElementById('ventasEstado').value && { estado: document.getElementById('ventasEstado').value })
+            };
+            loadVentas(1);
+        });
+
+        document.getElementById('btnFiltrarGastos').addEventListener('click', () => {
+            filters.gastos = {
+                ...(document.getElementById('gastosFechaInicio').value && { fechaInicio: document.getElementById('gastosFechaInicio').value }),
+                ...(document.getElementById('gastosFechaFin').value && { fechaFin: document.getElementById('gastosFechaFin').value }),
+                ...(document.getElementById('gastosTipo').value && { tipo: document.getElementById('gastosTipo').value })
+            };
+            loadGastos(1);
+        });
+
+        document.getElementById('btnVentasSiguiente').addEventListener('click', () => loadVentas(currentPage.ventas + 1));
+        document.getElementById('btnVentasAnterior').addEventListener('click', () => loadVentas(currentPage.ventas - 1));
+        document.getElementById('btnGastosSiguiente').addEventListener('click', () => loadGastos(currentPage.gastos + 1));
+        document.getElementById('btnGastosAnterior').addEventListener('click', () => loadGastos(currentPage.gastos - 1));
+
+        async function cancelarVenta(id) {
+            if (confirm('¿Estás seguro de que quieres cancelar esta venta?')) {
+                try {
+                    const response = await fetch(`${API_BASE}/ventas/${id}`, {
+                        method: 'DELETE'
+                    });
+
+                    if (response.ok) {
+                        alert('Venta cancelada exitosamente');
+                        loadVentas();
+                    } else {
+                        alert('Error cancelando venta');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                }
+            }
+        }
+
+        async function eliminarGasto(id) {
+            if (confirm('¿Estás seguro de que quieres eliminar este gasto?')) {
+                try {
+                    const response = await fetch(`${API_BASE}/gastos/${id}`, {
+                        method: 'DELETE'
+                    });
+
+                    if (response.ok) {
+                        alert('Gasto eliminado exitosamente');
+                        loadGastos();
+                    } else {
+                        alert('Error eliminando gasto');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                }
+            }
+        }
+
+        async function verDetalleVenta(id) {
+            try {
+                const response = await fetch(`${API_BASE}/ventas/${id}`);
+                const venta = await response.json();
+                
+                const detalles = venta.detalles.map(d => `
+                    <li>${d.stock.producto.nombre} - Cantidad: ${d.cantidad}, Precio: ${formatCurrency(d.precio)}</li>
+                `).join('');
+
+                alert(`Venta #${venta.id}\nCliente: ${venta.cliente.nombre}\nTotal: ${formatCurrency(venta.total)}\nDetalles:\n${detalles}`);
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        // Initialize
+        loadDashboard();
+    </script>
+</body>
+</html>
