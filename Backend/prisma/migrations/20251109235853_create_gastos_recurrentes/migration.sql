@@ -194,6 +194,7 @@ CREATE TABLE `Gastos` (
     `fecha` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `concepto` VARCHAR(191) NOT NULL,
     `monto` DOUBLE NOT NULL,
+    `tipo` VARCHAR(191) NOT NULL,
 
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -246,6 +247,22 @@ CREATE TABLE `AbonosPlanSepare` (
     `monto` DOUBLE NOT NULL,
     `fecha` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `concepto` VARCHAR(191) NULL,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `GastosRecurrentes` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `concepto` VARCHAR(191) NOT NULL,
+    `monto` DOUBLE NOT NULL,
+    `frecuencia` VARCHAR(191) NOT NULL,
+    `dia_del_mes` INTEGER NULL,
+    `fecha_inicio` DATETIME(3) NOT NULL,
+    `fecha_fin` DATETIME(3) NULL,
+    `activo` BOOLEAN NOT NULL DEFAULT true,
+    `usuarioId` INTEGER NOT NULL,
+    `proveedorId` INTEGER NULL,
 
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -336,6 +353,12 @@ ALTER TABLE `AbonosPlanSepare` ADD CONSTRAINT `AbonosPlanSepare_planSepareId_fke
 
 -- AddForeignKey
 ALTER TABLE `AbonosPlanSepare` ADD CONSTRAINT `AbonosPlanSepare_usuarioId_fkey` FOREIGN KEY (`usuarioId`) REFERENCES `Usuarios`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `GastosRecurrentes` ADD CONSTRAINT `GastosRecurrentes_usuarioId_fkey` FOREIGN KEY (`usuarioId`) REFERENCES `Usuarios`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `GastosRecurrentes` ADD CONSTRAINT `GastosRecurrentes_proveedorId_fkey` FOREIGN KEY (`proveedorId`) REFERENCES `Proveedores`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `_CategoriasSubcategorias` ADD CONSTRAINT `_CategoriasSubcategorias_A_fkey` FOREIGN KEY (`A`) REFERENCES `Categorias`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;

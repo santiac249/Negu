@@ -30,6 +30,7 @@ model Usuarios {
   compras Compras[]
   ventas Ventas[]
   gastos Gastos[]
+  gastosRecurrentes  GastosRecurrentes[]
   planSepares   PlanSepare[]
   auditorias Auditoria[]
   abonosPlanSepare AbonosPlanSepare[]
@@ -122,6 +123,7 @@ model Proveedores {
   f_creacion DateTime  @default(now())
   compras    Compras[]
   gastos Gastos[]
+  gastosRecurrentes  GastosRecurrentes[]
 }
 
 model Compras {
@@ -192,6 +194,7 @@ model Gastos {
   fecha        DateTime @default(now())
   concepto     String
   monto        Float
+  tipo         String
   usuario      Usuarios  @relation(fields: [usuarioId], references: [id])
   proveedor    Proveedores? @relation(fields: [proveedorId], references: [id])
 }
@@ -248,3 +251,20 @@ model AbonosPlanSepare {
   planSepare    PlanSepare @relation(fields: [planSepareId], references: [id])
   usuario       Usuarios   @relation(fields: [usuarioId], references: [id])
 }
+
+model GastosRecurrentes {
+  id               Int       @id @default(autoincrement())
+  concepto         String
+  monto            Float
+  frecuencia       String    // "MENSUAL", "BISEMANAL", "SEMANAL", "ANUAL"
+  dia_del_mes      Int?      // Ej: 5 para el 5 de cada mes
+  fecha_inicio     DateTime
+  fecha_fin        DateTime? // Null = indefinido
+  activo           Boolean   @default(true)
+  usuarioId        Int
+  proveedorId      Int?
+
+  usuario          Usuarios   @relation(fields: [usuarioId], references: [id])
+  proveedor        Proveedores? @relation(fields: [proveedorId], references: [id])
+}
+
