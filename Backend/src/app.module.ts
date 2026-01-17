@@ -12,10 +12,8 @@ import { StockModule } from './stock/stock.module';
 import { ComprasModule } from './compras/compras.module';
 import { PlanSepareModule } from './plan-separe/plan-separe.module';
 import { ClientesModule } from './clientes/clientes.module';
-import { ClientesController } from './clientes/clientes.controller';
-import { GastosController } from './gastos/gastos.controller';
-import { GastosService } from './gastos/gastos.service';
 import { GastosModule } from './gastos/gastos.module';
+import { VentasModule } from './ventas/ventas.module';
 
 @Module({
   imports: [
@@ -33,9 +31,7 @@ import { GastosModule } from './gastos/gastos.module';
     PlanSepareModule,
     ClientesModule,
     GastosModule,
+    VentasModule,
   ],
-  controllers: [ClientesController, GastosController],
-  providers: [GastosService],
-  // No declare servicios ni controladores aquí que ya estén en módulos importados
 })
 export class AppModule {}
