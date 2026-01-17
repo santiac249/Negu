@@ -1,19 +1,30 @@
-// src/gastos/dto/create-gasto.dto.ts
-import { IsString, IsNumber, IsOptional, IsIn, Min, Length } from 'class-validator';
+import { IsString, IsNumber, IsPositive, IsOptional, IsDate, IsNotEmpty } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreateGastoDto {
+  @IsNumber()
+  @IsNotEmpty()
+  usuarioId: number;
+
+  @IsNumber()
+  @IsOptional()
+  proveedorId?: number;
+
   @IsString()
-  @Length(3, 255, { message: 'El concepto debe tener entre 3 y 255 caracteres' })
+  @IsNotEmpty()
   concepto: string;
 
   @IsNumber()
-  @Min(0.01, { message: 'El monto debe ser mayor a 0' })
+  @IsPositive()
+  @IsNotEmpty()
   monto: number;
 
-  @IsIn(['OPERACIONAL', 'MANTENIMIENTO'], { message: 'El tipo debe ser OPERACIONAL o MANTENIMIENTO' })
-  tipo: string;
+  @IsString()
+  @IsNotEmpty()
+  tipo: string; // 'Operativo', 'Administrativo', 'Marketing', etc.
 
+  @IsDate()
+  @Type(() => Date)
   @IsOptional()
-  @IsNumber()
-  proveedorId?: number;
+  fecha?: Date;
 }
