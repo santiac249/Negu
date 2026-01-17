@@ -1,53 +1,96 @@
-import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateGastoDto } from './dto/create-gasto.dto';
 import { UpdateGastoDto } from './dto/update-gasto.dto';
-import { CreateGastoRecurrenteDto } from './dto/create-gasto-recurrente.dto';
-import { UpdateGastoRecurrenteDto } from './dto/update-gasto-recurrente.dto';
-import { Prisma } from '@prisma/client';
+import { FilterGastoDto } from './dto/filter-gasto.dto';
 
 @Injectable()
 export class GastosService {
   constructor(private prisma: PrismaService) {}
 
-  // ==================== GASTOS ====================
+  /**
+   * Obtener todos los gastos con filtros y paginación
+   */
+  async findAll(filter: FilterGastoDto) {
+    const page = filter.page || 1;
+    const limit = filter.limit || 10;
+    const skip = (page - 1) * limit;
 
-  async findAll(filtros?: {
-    tipo?: string;
-    proveedorId?: number;
-    usuarioId?: number;
-    fecha_inicio?: string;
-    fecha_fin?: string;
-  }) {
-    const where: Prisma.GastosWhereInput = {};
+    const where: any = {};
 
-    if (filtros?.tipo) where.tipo = filtros.tipo;
-    if (filtros?.proveedorId) where.proveedorId = filtros.proveedorId;
-    if (filtros?.usuarioId) where.usuarioId = filtros.usuarioId;
+    if (filter.usuarioId) {
+      where.usuarioId = filter.usuarioId;
+    }
 
-    if (filtros?.fecha_inicio || filtros?.fecha_fin) {
-      where.fecha = {
-        ...(filtros.fecha_inicio && { gte: new Date(filtros.fecha_inicio) }),
-        ...(filtros.fecha_fin && { lte: new Date(filtros.fecha_fin) }),
+    if (filter.proveedorId) {
+      where.proveedorId = filter.proveedorId;
+    }
+
+    if (filter.concepto) {
+      where.concepto = {
+        contains: filter.concepto,
+        mode: 'insensitive',
       };
     }
 
-    return await this.prisma.gastos.findMany({
-      where,
-      include: {
-        usuario: { select: { nombre: true } },
-        proveedor: { select: { nombre: true } },
-      },
-      orderBy: { fecha: 'desc' },
-    });
+    if (filter.tipo) {
+      where.tipo = filter.tipo;
+    }
+
+    if (filter.fechaInicio || filter.fechaFin) {
+      where.fecha = {};
+      if (filter.fechaInicio) {
+        where.fecha.gte = new Date(filter.fechaInicio);
+      }
+      if (filter.fechaFin) {
+        where.fecha.lte = new Date(filter.fechaFin);
+      }
+    }
+
+    const [gastos, total] = await Promise.all([
+      this.prisma.gastos.findMany({
+        where,
+        include: {
+          usuario: {
+            select: { id: true, nombre: true, usuario: true },
+          },
+          proveedor: {
+            select: { id: true, nombre: true },
+          },
+        },
+        orderBy: { fecha: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.gastos.count({ where }),
+    ]);
+
+    return {
+      data: gastos,
+      total,
+      page,
+      limit,
+      pages: Math.ceil(total / limit),
+    };
   }
 
+  /**
+   * Obtener un gasto por ID
+   */
   async findOne(id: number) {
     const gasto = await this.prisma.gastos.findUnique({
       where: { id },
       include: {
-        usuario: true,
-        proveedor: true,
+        usuario: {
+          select: { id: true, nombre: true, usuario: true },
+        },
+        proveedor: {
+          select: { id: true, nombre: true, telefono: true, correo: true },
+        },
       },
     });
 
@@ -58,243 +101,210 @@ export class GastosService {
     return gasto;
   }
 
-  async create(usuarioId: number, data: CreateGastoDto) {
-    if (data.proveedorId) {
-      const proveedorExists = await this.prisma.proveedores.findUnique({
-        where: { id: data.proveedorId },
+  /**
+   * Crear un nuevo gasto
+   */
+  async create(createGastoDto: CreateGastoDto) {
+    if (createGastoDto.monto <= 0) {
+      throw new BadRequestException('El monto debe ser mayor a 0');
+    }
+
+    // Validar que el usuario existe
+    const usuario = await this.prisma.usuarios.findUnique({
+      where: { id: createGastoDto.usuarioId },
+    });
+
+    if (!usuario) {
+      throw new BadRequestException(
+        `Usuario con ID ${createGastoDto.usuarioId} no existe`,
+      );
+    }
+
+    // Validar proveedor si se proporciona
+    if (createGastoDto.proveedorId) {
+      const proveedor = await this.prisma.proveedores.findUnique({
+        where: { id: createGastoDto.proveedorId },
       });
 
-      if (!proveedorExists) {
-        throw new BadRequestException('Proveedor no encontrado');
+      if (!proveedor) {
+        throw new BadRequestException(
+          `Proveedor con ID ${createGastoDto.proveedorId} no existe`,
+        );
       }
     }
 
-    try {
-      return await this.prisma.gastos.create({
-        data: {
-          concepto: data.concepto.trim(),
-          monto: data.monto,
-          tipo: data.tipo,
-          usuarioId,
-          proveedorId: data.proveedorId || null,
+    return await this.prisma.gastos.create({
+      data: {
+        usuarioId: createGastoDto.usuarioId,
+        proveedorId: createGastoDto.proveedorId,
+        concepto: createGastoDto.concepto,
+        monto: createGastoDto.monto,
+        tipo: createGastoDto.tipo,
+        fecha: createGastoDto.fecha || new Date(),
+      },
+      include: {
+        usuario: {
+          select: { id: true, nombre: true, usuario: true },
         },
-        include: {
-          usuario: { select: { nombre: true } },
-          proveedor: { select: { nombre: true } },
+        proveedor: {
+          select: { id: true, nombre: true },
         },
-      });
-    } catch (error) {
-      throw new BadRequestException('Error al crear gasto');
-    }
+      },
+    });
   }
 
-  async update(id: number, usuarioId: number, rol: string, data: UpdateGastoDto) {
-    await this.findOne(id);
+  /**
+   * Actualizar un gasto
+   */
+  async update(id: number, updateGastoDto: UpdateGastoDto) {
+    const gasto = await this.prisma.gastos.findUnique({
+      where: { id },
+    });
 
-    // Solo Admin puede editar
-    if (rol !== 'Administrador') {
-      throw new ForbiddenException('Solo administradores pueden editar gastos');
+    if (!gasto) {
+      throw new NotFoundException(`Gasto con ID ${id} no encontrado`);
     }
 
-    if (data.proveedorId) {
-      const proveedorExists = await this.prisma.proveedores.findUnique({
-        where: { id: data.proveedorId },
-      });
+    if (updateGastoDto.monto !== undefined && updateGastoDto.monto <= 0) {
+      throw new BadRequestException('El monto debe ser mayor a 0');
+    }
 
-      if (!proveedorExists) {
-        throw new BadRequestException('Proveedor no encontrado');
+    // Validar usuario si se actualiza
+    if (updateGastoDto.usuarioId) {
+      const usuario = await this.prisma.usuarios.findUnique({
+        where: { id: updateGastoDto.usuarioId },
+      });
+      if (!usuario) {
+        throw new BadRequestException(
+          `Usuario con ID ${updateGastoDto.usuarioId} no existe`,
+        );
       }
     }
 
-    try {
-      return await this.prisma.gastos.update({
-        where: { id },
-        data: {
-          concepto: data.concepto?.trim(),
-          monto: data.monto,
-          tipo: data.tipo,
-          proveedorId: data.proveedorId,
-        },
-        include: {
-          usuario: { select: { nombre: true } },
-          proveedor: { select: { nombre: true } },
-        },
+    // Validar proveedor si se actualiza
+    if (updateGastoDto.proveedorId) {
+      const proveedor = await this.prisma.proveedores.findUnique({
+        where: { id: updateGastoDto.proveedorId },
       });
-    } catch (error) {
-      throw new BadRequestException('Error al actualizar gasto');
+      if (!proveedor) {
+        throw new BadRequestException(
+          `Proveedor con ID ${updateGastoDto.proveedorId} no existe`,
+        );
+      }
     }
+
+    return await this.prisma.gastos.update({
+      where: { id },
+      data: {
+        ...(updateGastoDto.usuarioId && {
+          usuarioId: updateGastoDto.usuarioId,
+        }),
+        ...(updateGastoDto.proveedorId && {
+          proveedorId: updateGastoDto.proveedorId,
+        }),
+        ...(updateGastoDto.concepto && {
+          concepto: updateGastoDto.concepto,
+        }),
+        ...(updateGastoDto.monto && {
+          monto: updateGastoDto.monto,
+        }),
+        ...(updateGastoDto.tipo && {
+          tipo: updateGastoDto.tipo,
+        }),
+        ...(updateGastoDto.fecha && {
+          fecha: new Date(updateGastoDto.fecha),
+        }),
+      },
+      include: {
+        usuario: {
+          select: { id: true, nombre: true, usuario: true },
+        },
+        proveedor: {
+          select: { id: true, nombre: true },
+        },
+      },
+    });
   }
 
-  // Gastos no se pueden eliminar, solo Admin puede crearlos
-  async getSummary(fecha_inicio?: string, fecha_fin?: string) {
-    const where: Prisma.GastosWhereInput = {};
+  /**
+   * Eliminar un gasto
+   */
+  async remove(id: number) {
+    const gasto = await this.prisma.gastos.findUnique({
+      where: { id },
+    });
 
-    if (fecha_inicio || fecha_fin) {
-      where.fecha = {
-        ...(fecha_inicio && { gte: new Date(fecha_inicio) }),
-        ...(fecha_fin && { lte: new Date(fecha_fin) }),
-      };
+    if (!gasto) {
+      throw new NotFoundException(`Gasto con ID ${id} no encontrado`);
     }
 
-    const gastos = await this.prisma.gastos.findMany({ where });
-    const porTipo = {
-      OPERACIONAL: gastos
-        .filter((g) => g.tipo === 'OPERACIONAL')
-        .reduce((sum, g) => sum + g.monto, 0),
-      MANTENIMIENTO: gastos
-        .filter((g) => g.tipo === 'MANTENIMIENTO')
-        .reduce((sum, g) => sum + g.monto, 0),
+    return await this.prisma.gastos.delete({
+      where: { id },
+    });
+  }
+
+  /**
+   * Obtener resumen de gastos por tipo
+   */
+  async getResumenPorTipo() {
+    const resumen = await this.prisma.gastos.groupBy({
+      by: ['tipo'],
+      _sum: {
+        monto: true,
+      },
+      _count: true,
+    });
+
+    return resumen.map((item) => ({
+      tipo: item.tipo,
+      total: item._sum.monto,
+      cantidad: item._count,
+    }));
+  }
+
+  /**
+   * Obtener gastos por período
+   */
+  async getGastosPorPeriodo(fechaInicio: Date, fechaFin: Date) {
+    return await this.prisma.gastos.findMany({
+      where: {
+        fecha: {
+          gte: new Date(fechaInicio),
+          lte: new Date(fechaFin),
+        },
+      },
+      include: {
+        usuario: {
+          select: { id: true, nombre: true },
+        },
+        proveedor: {
+          select: { id: true, nombre: true },
+        },
+      },
+      orderBy: { fecha: 'desc' },
+    });
+  }
+
+  /**
+   * Obtener total de gastos en un período
+   */
+  async getTotalGastosPeriodo(fechaInicio: Date, fechaFin: Date) {
+    const result = await this.prisma.gastos.aggregate({
+      where: {
+        fecha: {
+          gte: new Date(fechaInicio),
+          lte: new Date(fechaFin),
+        },
+      },
+      _sum: {
+        monto: true,
+      },
+      _count: true,
+    });
+
+    return {
+      total: result._sum.monto || 0,
+      cantidad: result._count,
     };
-    const total = gastos.reduce((sum, g) => sum + g.monto, 0);
-
-    return { porTipo, total, cantidad: gastos.length };
-  }
-
-  // ==================== GASTOS RECURRENTES ====================
-
-  async findAllRecurrentes() {
-    return await this.prisma.gastosRecurrentes.findMany({
-      include: {
-        usuario: { select: { nombre: true } },
-        proveedor: { select: { nombre: true } },
-      },
-      orderBy: { fecha_inicio: 'desc' },
-    });
-  }
-
-  async findOneRecurrente(id: number) {
-    const recurrente = await this.prisma.gastosRecurrentes.findUnique({
-      where: { id },
-      include: {
-        usuario: true,
-        proveedor: true,
-      },
-    });
-
-    if (!recurrente) {
-      throw new NotFoundException(`Gasto recurrente con ID ${id} no encontrado`);
-    }
-
-    return recurrente;
-  }
-
-  async createRecurrente(usuarioId: number, data: CreateGastoRecurrenteDto) {
-    if (data.frecuencia === 'MENSUAL' && !data.dia_del_mes) {
-      throw new BadRequestException('dia_del_mes es requerido para frecuencia MENSUAL');
-    }
-
-    if (data.proveedorId) {
-      const proveedorExists = await this.prisma.proveedores.findUnique({
-        where: { id: data.proveedorId },
-      });
-
-      if (!proveedorExists) {
-        throw new BadRequestException('Proveedor no encontrado');
-      }
-    }
-
-    try {
-      return await this.prisma.gastosRecurrentes.create({
-        data: {
-          concepto: data.concepto.trim(),
-          monto: data.monto,
-          frecuencia: data.frecuencia,
-          dia_del_mes: data.dia_del_mes || null,
-          fecha_inicio: new Date(data.fecha_inicio),
-          fecha_fin: data.fecha_fin ? new Date(data.fecha_fin) : null,
-          activo: true,
-          usuarioId,
-          proveedorId: data.proveedorId || null,
-        },
-        include: {
-          usuario: { select: { nombre: true } },
-          proveedor: { select: { nombre: true } },
-        },
-      });
-    } catch (error) {
-      throw new BadRequestException('Error al crear gasto recurrente');
-    }
-  }
-
-  async updateRecurrente(id: number, rol: string, data: UpdateGastoRecurrenteDto) {
-    await this.findOneRecurrente(id);
-
-    // Solo Admin puede editar
-    if (rol !== 'Administrador') {
-      throw new ForbiddenException('Solo administradores pueden editar gastos recurrentes');
-    }
-
-    if (data.frecuencia === 'MENSUAL' && !data.dia_del_mes) {
-      throw new BadRequestException('dia_del_mes es requerido para frecuencia MENSUAL');
-    }
-
-    try {
-      return await this.prisma.gastosRecurrentes.update({
-        where: { id },
-        data: {
-          concepto: data.concepto?.trim(),
-          monto: data.monto,
-          frecuencia: data.frecuencia,
-          dia_del_mes: data.dia_del_mes || null,
-          fecha_inicio: data.fecha_inicio ? new Date(data.fecha_inicio) : undefined,
-          fecha_fin: data.fecha_fin ? new Date(data.fecha_fin) : undefined,
-        },
-        include: {
-          usuario: { select: { nombre: true } },
-          proveedor: { select: { nombre: true } },
-        },
-      });
-    } catch (error) {
-      throw new BadRequestException('Error al actualizar gasto recurrente');
-    }
-  }
-
-  async toggleRecurrente(id: number, rol: string, activo: boolean) {
-    if (rol !== 'Administrador') {
-      throw new ForbiddenException('Solo administradores pueden cambiar el estado de gastos recurrentes');
-    }
-
-    return await this.prisma.gastosRecurrentes.update({
-      where: { id },
-      data: { activo },
-    });
-  }
-
-  // Generar gastos del próximo período (se puede llamar manualmente o vía cron)
-  async generarProximoPeriodo(gastosRecurrenteId: number) {
-    const recurrente = await this.findOneRecurrente(gastosRecurrenteId);
-
-    if (!recurrente.activo) {
-      throw new BadRequestException('Gasto recurrente no activo');
-    }
-
-    const ahora = new Date();
-    if (recurrente.fecha_fin && ahora > recurrente.fecha_fin) {
-      throw new BadRequestException('Gasto recurrente ya ha vencido');
-    }
-
-    // Calcular próxima fecha según frecuencia
-    let proximaFecha = new Date(recurrente.fecha_inicio);
-
-    // Aquí puedes agregar lógica para calcular próxima fecha según frecuencia
-    // Por ahora, asumimos que el usuario decide cuándo generar
-
-    try {
-      return await this.prisma.gastos.create({
-        data: {
-          concepto: `${recurrente.concepto} (Recurrente)`,
-          monto: recurrente.monto,
-          tipo: 'OPERACIONAL',
-          usuarioId: recurrente.usuarioId,
-          proveedorId: recurrente.proveedorId,
-        },
-        include: {
-          usuario: { select: { nombre: true } },
-          proveedor: { select: { nombre: true } },
-        },
-      });
-    } catch (error) {
-      throw new BadRequestException('Error al generar próximo período');
-    }
   }
 }
