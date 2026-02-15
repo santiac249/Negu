@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, AlertCircle } from 'lucide-react';
 import { findAllProveedores } from '../../api/proveedores';
 import { useAuth } from '../../store/auth';
 
@@ -14,6 +14,7 @@ export default function EditGastoModal({ gasto, onClose, onUpdate }) {
   );
   const [proveedores, setProveedores] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const tiposGasto = ['Operativo', 'Administrativo', 'Financiero', 'Marketing', 'Otro'];
 
@@ -30,10 +31,31 @@ export default function EditGastoModal({ gasto, onClose, onUpdate }) {
     }
   };
 
+  const validateForm = () => {
+    if (!concepto.trim()) {
+      setError('El concepto es requerido');
+      return false;
+    }
+    if (!monto || parseFloat(monto) <= 0) {
+      setError('El monto debe ser mayor a 0');
+      return false;
+    }
+    if (!tipo) {
+      setError('El tipo de gasto es requerido');
+      return false;
+    }
+    if (!fecha) {
+      setError('La fecha es requerida');
+      return false;
+    }
+    return true;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!concepto.trim() || !monto || parseFloat(monto) <= 0) {
-      alert('Por favor completa todos los campos requeridos correctamente');
+    setError(null);
+    
+    if (!validateForm()) {
       return;
     }
 
@@ -46,8 +68,9 @@ export default function EditGastoModal({ gasto, onClose, onUpdate }) {
         proveedorId: proveedorId ? parseInt(proveedorId) : null,
         fecha: new Date(fecha).toISOString(),
       });
+      // No cerramos aquí, el padre lo hace si onUpdate es exitoso
     } catch (err) {
-      console.error(err);
+      setError(err.response?.data?.message || err.message || 'Error al actualizar el gasto');
     } finally {
       setLoading(false);
     }
@@ -58,10 +81,11 @@ export default function EditGastoModal({ gasto, onClose, onUpdate }) {
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Editar Gasto</h2>
+          <h2 className="text-xl font-semibold">Editar Gasto #{gasto.id}</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100"
+            disabled={loading}
           >
             <X className="w-5 h-5" />
           </button>
@@ -69,6 +93,14 @@ export default function EditGastoModal({ gasto, onClose, onUpdate }) {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {/* Error message */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-red-800">{error}</p>
+            </div>
+          )}
+
           {/* Concepto */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -77,9 +109,12 @@ export default function EditGastoModal({ gasto, onClose, onUpdate }) {
             <input
               type="text"
               value={concepto}
-              onChange={(e) => setConcepto(e.target.value)}
+              onChange={(e) => {
+                setConcepto(e.target.value);
+                setError(null);
+              }}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              required
+              disabled={loading}
             />
           </div>
 
@@ -91,8 +126,12 @@ export default function EditGastoModal({ gasto, onClose, onUpdate }) {
               </label>
               <select
                 value={tipo}
-                onChange={(e) => setTipo(e.target.value)}
+                onChange={(e) => {
+                  setTipo(e.target.value);
+                  setError(null);
+                }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                disabled={loading}
               >
                 {tiposGasto.map((t) => (
                   <option key={t} value={t}>
@@ -104,16 +143,19 @@ export default function EditGastoModal({ gasto, onClose, onUpdate }) {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Monto <span className="text-red-500">*</span>
+                Monto (COP) <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
                 value={monto}
-                onChange={(e) => setMonto(e.target.value)}
+                onChange={(e) => {
+                  setMonto(e.target.value);
+                  setError(null);
+                }}
                 min="0"
-                step="0.01"
+                step="1"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                required
+                disabled={loading}
               />
             </div>
           </div>
@@ -127,9 +169,13 @@ export default function EditGastoModal({ gasto, onClose, onUpdate }) {
               <input
                 type="date"
                 value={fecha}
-                onChange={(e) => setFecha(e.target.value)}
+                onChange={(e) => {
+                  setFecha(e.target.value);
+                  setError(null);
+                }}
+                max={new Date().toISOString().split('T')[0]}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                required
+                disabled={loading}
               />
             </div>
 
@@ -141,8 +187,9 @@ export default function EditGastoModal({ gasto, onClose, onUpdate }) {
                 value={proveedorId}
                 onChange={(e) => setProveedorId(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                disabled={loading}
               >
-                <option value="">Seleccionar proveedor</option>
+                <option value="">Sin proveedor</option>
                 {proveedores.map((prov) => (
                   <option key={prov.id} value={prov.id}>
                     {prov.nombre}
@@ -150,6 +197,19 @@ export default function EditGastoModal({ gasto, onClose, onUpdate }) {
                 ))}
               </select>
             </div>
+          </div>
+
+          {/* Info del registro original */}
+          <div className="bg-gray-50 rounded-lg p-3 text-sm space-y-1">
+            <p className="text-gray-600">
+              <strong>Registrado por:</strong> {gasto.usuario?.nombre || 'Desconocido'}
+            </p>
+            <p className="text-gray-600">
+              <strong>Fecha de registro:</strong>{' '}
+              {gasto.f_creacion
+                ? new Date(gasto.f_creacion).toLocaleDateString('es-CO')
+                : 'N/A'}
+            </p>
           </div>
 
           {/* Buttons */}
@@ -164,10 +224,17 @@ export default function EditGastoModal({ gasto, onClose, onUpdate }) {
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50"
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={loading}
             >
-              {loading ? 'Guardando...' : 'Guardar Cambios'}
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Guardando...
+                </span>
+              ) : (
+                'Guardar Cambios'
+              )}
             </button>
           </div>
         </form>
